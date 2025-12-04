@@ -1,0 +1,1 @@
+ALTER TABLE `servers` ADD `db_port` integer DEFAULT 3306;

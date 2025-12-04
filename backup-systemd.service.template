@@ -1,0 +1,19 @@
+[Unit]
+Description=Server Backup Web Application
+After=network.target
+
+[Service]
+Type=simple
+User=USER_PLACEHOLDER
+WorkingDirectory=WORKING_DIR_PLACEHOLDER
+Environment="NODE_ENV=production"
+Environment="PORT=PORT_PLACEHOLDER"
+ExecStart=NODE_PATH_PLACEHOLDER WORKING_DIR_PLACEHOLDER/dist/server/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

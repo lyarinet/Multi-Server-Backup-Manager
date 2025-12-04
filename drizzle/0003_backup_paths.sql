@@ -1,0 +1,1 @@
+ALTER TABLE `servers` ADD `backup_paths` text;

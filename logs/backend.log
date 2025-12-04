@@ -1,0 +1,49 @@
+
+> server-backup-web@1.0.0 dev:server
+> PORT=${PORT:-3010} nodemon --watch src/server --exec tsx src/server/index.ts
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): src/server/**/*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
+[Cron] Loaded 1 cron job(s)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
+[Cron] Loaded 1 cron job(s)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
+[Cron] Loaded 1 cron job(s)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
+[Cron] Loaded 1 cron job(s)
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
+[Cron] Loaded 1 cron job(s)
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

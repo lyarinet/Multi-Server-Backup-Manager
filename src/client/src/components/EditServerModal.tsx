@@ -1,0 +1,335 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { X, Check } from 'lucide-react';
+import { Server } from '../../../shared/types';
+import { DirectoryBrowserModal } from './DirectoryBrowserModal';
+
+interface EditServerModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    server: Server | null;
+}
+
+export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServerModalProps) {
+    const [loading, setLoading] = useState(false);
+    const [browserOpenIdx, setBrowserOpenIdx] = useState<number | null>(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        ip: '',
+        user: '',
+        port: 22,
+        sshKeyPath: '',
+        password: '',
+        localBackupPath: '',
+        backupPaths: [] as string[],
+        dbUser: '',
+        dbPassword: '',
+        dbHost: 'localhost',
+        dbPort: 3306,
+        dbSelected: [] as string[],
+        backupWww: true,
+        backupLogs: true,
+        backupNginx: true,
+        backupDb: true,
+    });
+    const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
+
+    // Populate form when server changes
+    useEffect(() => {
+        if (server) {
+            setFormData({
+                name: server.name,
+                ip: server.ip,
+                user: server.user,
+                port: server.port,
+                sshKeyPath: server.sshKeyPath || '',
+                password: server.password || '',
+                localBackupPath: server.localBackupPath || '',
+                backupPaths: server.backupPaths || [],
+                dbUser: server.dbUser || '',
+                dbPassword: server.dbPassword || '',
+                dbHost: server.dbHost || 'localhost',
+                dbPort: server.dbPort || 3306,
+                dbSelected: server.dbSelected || [],
+                backupWww: Boolean(server.backupWww),
+                backupLogs: Boolean(server.backupLogs),
+                backupNginx: Boolean(server.backupNginx),
+                backupDb: Boolean(server.backupDb),
+            });
+        }
+    }, [server]);
+
+    if (!isOpen || !server) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/servers/${server.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+            if (res.ok) {
+                onSuccess();
+                onClose();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-10">
+            <div className="bg-card border border-border rounded-lg w-full max-w-2xl p-6 shadow-lg animate-in fade-in zoom-in duration-200 my-auto">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold">Edit Server</h2>
+                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Basic Information */}
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg">Basic Information</h3>
+                        <p className="text-sm text-muted-foreground -mt-3 mb-4">Enter the basic details of your server</p>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Server Name</label>
+                                <input
+                                    required
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="e.g., Production Server"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Hostname/IP</label>
+                                <input
+                                    required
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.ip}
+                                    onChange={(e) => setFormData({ ...formData, ip: e.target.value })}
+                                    placeholder="e.g., 192.168.1.100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">SSH Port</label>
+                                <input
+                                    type="number"
+                                    required
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.port}
+                                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">SSH Username</label>
+                                <input
+                                    required
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.user}
+                                    onChange={(e) => setFormData({ ...formData, user: e.target.value })}
+                                    placeholder="e.g., root"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SSH Configuration */}
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg">SSH Configuration</h3>
+                        <p className="text-sm text-muted-foreground -mt-3 mb-4">Provide SSH key path or password for authentication</p>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">SSH Private Key Path</label>
+                            <input
+                                required={!formData.password}
+                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={formData.sshKeyPath}
+                                onChange={(e) => setFormData({ ...formData, sshKeyPath: e.target.value })}
+                                placeholder="e.g., ~/.ssh/id_rsa"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Password (optional, for password auth)</label>
+                            <input
+                                type="password"
+                                required={!formData.sshKeyPath}
+                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                placeholder="SSH password"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Local Backup Path (Optional)</label>
+                            <input
+                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={formData.localBackupPath}
+                                onChange={(e) => setFormData({ ...formData, localBackupPath: e.target.value })}
+                                placeholder="Leave empty to use global backup location"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">If empty, backups will use the Global Backup Output Location from Settings</p>
+                        </div>
+                    </div>
+
+                    {/* Backup Options */}
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg">Backup Options</h3>
+                        <p className="text-sm text-muted-foreground -mt-3 mb-4">Select what to include in backups</p>
+
+                        <div className="space-y-2">
+                            {[
+                                { key: 'backupWww', label: 'Backup /var/www (Web Files)' },
+                                { key: 'backupLogs', label: 'Backup /var/log (Logs)' },
+                                { key: 'backupNginx', label: 'Backup /etc/nginx (Nginx Config)' },
+                                { key: 'backupDb', label: 'Backup Database (mysqldump)' },
+                            ].map((option) => (
+                                <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData[option.key as keyof typeof formData] ? 'bg-primary border-primary' : 'border-input bg-background'} `}>
+                                        {formData[option.key as keyof typeof formData] && <Check className="w-3 h-3 text-primary-foreground" />}
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={formData[option.key as keyof typeof formData] as boolean}
+                                        onChange={(e) => setFormData({ ...formData, [option.key]: e.target.checked })}
+                                    />
+                                    <span className="text-sm">{option.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg">Custom Backup Locations</h3>
+                        <p className="text-sm text-muted-foreground -mt-3 mb-4">Add absolute paths on the remote server to include in backups</p>
+                        <div className="space-y-2">
+                            {formData.backupPaths.map((p, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                    <input
+                                        className="flex-1 h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                        value={p}
+                                        onChange={(e) => {
+                                            const arr = [...formData.backupPaths];
+                                            arr[idx] = e.target.value;
+                                            setFormData({ ...formData, backupPaths: arr });
+                                        }}
+                                        placeholder="e.g., /opt/data/uploads"
+                                    />
+                                    <Button type="button" variant="outline" onClick={() => {
+                                        const arr = formData.backupPaths.filter((_, i) => i !== idx);
+                                        setFormData({ ...formData, backupPaths: arr });
+                                    }}>Remove</Button>
+                                    <Button type="button" onClick={() => setBrowserOpenIdx(idx)}>Browse</Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, backupPaths: [...formData.backupPaths, ''] })}>Add Location</Button>
+                        </div>
+                    </div>
+
+                    <DirectoryBrowserModal
+                        isOpen={browserOpenIdx !== null}
+                        onClose={() => setBrowserOpenIdx(null)}
+                        onSelect={(selected) => {
+                            if (browserOpenIdx === null) return;
+                            const arr = [...formData.backupPaths];
+                            arr[browserOpenIdx] = selected;
+                            setFormData({ ...formData, backupPaths: arr });
+                            setBrowserOpenIdx(null);
+                        }}
+                        initialPath={formData.backupPaths[browserOpenIdx ?? 0] || '/'}
+                        serverId={server?.id}
+                    />
+
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <h3 className="font-semibold text-lg">MySQL Databases</h3>
+                        <p className="text-sm text-muted-foreground -mt-3 mb-4">Provide credentials to detect databases and select which to dump</p>
+                        <div className="grid grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">DB Host</label>
+                                <input className="w-full h-10 px-3 rounded-md border border-input bg-background" value={formData.dbHost} onChange={(e) => setFormData({ ...formData, dbHost: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">DB Port</label>
+                                <input type="number" className="w-full h-10 px-3 rounded-md border border-input bg-background" value={formData.dbPort} onChange={(e) => setFormData({ ...formData, dbPort: Number(e.target.value) })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">DB User</label>
+                                <input className="w-full h-10 px-3 rounded-md border border-input bg-background" value={formData.dbUser} onChange={(e) => setFormData({ ...formData, dbUser: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">DB Password</label>
+                                <input type="password" className="w-full h-10 px-3 rounded-md border border-input bg-background" value={formData.dbPassword} onChange={(e) => setFormData({ ...formData, dbPassword: e.target.value })} />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" onClick={async () => {
+                                try {
+                                    const res = await fetch(`/api/servers/${server!.id}/dbs`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            dbHost: formData.dbHost,
+                                            dbUser: formData.dbUser,
+                                            dbPassword: formData.dbPassword,
+                                            dbPort: formData.dbPort,
+                                        }),
+                                    });
+                                    const data = await res.json();
+                                    if (!res.ok) {
+                                        alert(`Detect failed: ${data?.error || 'Unknown error'}`);
+                                        return;
+                                    }
+                                    if (Array.isArray(data.databases)) {
+                                        setAvailableDatabases(data.databases);
+                                        setFormData({ ...formData, dbSelected: data.databases });
+                                    }
+                                } catch (e) {
+                                    alert('Detect failed');
+                                }
+                            }}>Detect</Button>
+                        </div>
+                        <div className="space-y-2 max-h-40 overflow-y-auto border border-border rounded p-2">
+                            {(availableDatabases.length > 0 ? availableDatabases : formData.dbSelected).map((db) => (
+                                <label key={db} className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.dbSelected.includes(db)}
+                                        onChange={(e) => {
+                                            const current = new Set(formData.dbSelected);
+                                            if (e.target.checked) {
+                                                current.add(db);
+                                            } else {
+                                                current.delete(db);
+                                            }
+                                            setFormData({ ...formData, dbSelected: Array.from(current) });
+                                        }}
+                                    />
+                                    <span className="text-sm">{db}</span>
+                                </label>
+                            ))}
+                            {availableDatabases.length === 0 && formData.dbSelected.length === 0 && (
+                                <div className="text-sm text-muted-foreground italic">No databases detected or selected</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? 'Updating...' : 'Update Server'}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}

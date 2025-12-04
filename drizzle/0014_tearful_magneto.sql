@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `autostart_enabled` integer DEFAULT false;
