@@ -499,6 +499,156 @@ You can also manage autostart from the Settings page in the web interface.
 - `POST /api/autostart/enable` - Enable autostart on boot
 - `POST /api/autostart/disable` - Disable autostart on boot
 
+## Mobile App Build (Android & iOS)
+
+This application can be built as a native mobile app using Capacitor for both Android and iOS platforms.
+
+### Prerequisites
+
+**For Android:**
+- Android Studio installed
+- Java Development Kit (JDK) 11 or higher
+- Android SDK (installed via Android Studio)
+
+**For iOS (macOS only):**
+- Xcode installed
+- CocoaPods (`sudo gem install cocoapods`)
+- iOS SDK (installed via Xcode)
+
+### Building Android APK
+
+1. **Configure Android Studio Path (macOS):**
+
+   **Option 1: Use the setup script (Recommended):**
+   ```bash
+   ./setup-android-studio-macos.sh
+   ```
+   This script will automatically detect Android Studio and configure the path.
+
+   **Option 2: Manual configuration:**
+   
+   On macOS, Android Studio is typically located at:
+   ```bash
+   /Applications/Android Studio.app/Contents/MacOS/studio
+   ```
+
+   Set the environment variable:
+   ```bash
+   export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"
+   ```
+
+   Or add to your `~/.zshrc` or `~/.bash_profile`:
+   ```bash
+   echo 'export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+2. **Build and Sync:**
+   ```bash
+   npm run android:build
+   ```
+
+3. **Open in Android Studio:**
+   ```bash
+   npm run android:open
+   ```
+
+4. **Build APK in Android Studio:**
+   - In Android Studio: `Build` → `Build Bundle(s) / APK(s)` → `Build APK(s)`
+   - APK will be in: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+### Building iOS IPA (macOS only)
+
+1. **Install CocoaPods (if not installed):**
+   ```bash
+   sudo gem install cocoapods
+   ```
+
+2. **Build and Sync:**
+   ```bash
+   npm run ios:build
+   ```
+
+3. **Open in Xcode:**
+   ```bash
+   npm run ios:open
+   ```
+
+4. **Build in Xcode:**
+   - Select your device or simulator
+   - Click `Product` → `Archive`
+   - Follow the prompts to create an IPA
+
+### API Configuration for Mobile Apps
+
+Before using the mobile app, configure the API base URL:
+
+1. Open the app
+2. Go to Settings
+3. Find "API Configuration" section
+4. Enter your API base URL (e.g., `https://apibk.lyarinet.com`)
+5. Save the configuration
+
+**Important:** The API base URL should:
+- ✅ Include protocol: `https://` or `http://`
+- ✅ Include domain: `apibk.lyarinet.com`
+- ❌ No trailing slash: `https://apibk.lyarinet.com` (not `/`)
+- ❌ No path: `https://apibk.lyarinet.com` (not `/api`)
+
+### Building APK Without Android Studio GUI
+
+If you're on a Linux server or don't have Android Studio GUI installed, you can build the APK directly using Gradle:
+
+```bash
+# Build debug APK (no signing required)
+npm run android:build-apk
+
+# Build release APK (requires signing configuration)
+npm run android:build-apk-release
+```
+
+The APK will be located at:
+- Debug: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Release: `android/app/build/outputs/apk/release/app-release.apk`
+
+**Note:** `npm run android:open` only works on macOS/Windows/Linux desktop with Android Studio GUI installed. On servers, use the build commands above.
+
+### Troubleshooting
+
+**Android Studio not found (macOS):**
+```bash
+# Check if Android Studio is installed
+ls -la "/Applications/Android Studio.app/Contents/MacOS/studio"
+
+# If found, set the path
+export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"
+
+# If not found, install Android Studio from:
+# https://developer.android.com/studio
+```
+
+**Building on Linux Server (No GUI):**
+```bash
+# Install Android SDK and build tools (if not already installed)
+# Then build APK directly:
+npm run android:build-apk
+
+# Or manually with Gradle:
+cd android
+./gradlew assembleDebug
+```
+
+**CORS Errors:**
+- Ensure the backend server has CORS configured (already included in the code)
+- Check that the API base URL is correct
+- Verify the backend server is running
+
+**Build Errors:**
+- Make sure all dependencies are installed: `npm install`
+- Clean and rebuild: `npm run build:client && npm run android:build`
+- For Gradle errors, check `android/app/build.gradle` configuration
+- Ensure Java JDK is installed: `java -version`
+
 ## License
 
 This project is licensed under the **ISC License** - a simple, permissive open source license similar to MIT.
