@@ -56,15 +56,29 @@ function App() {
             try {
                 const res = await fetch('/api/login-ip-whitelist/check');
                 if (res.ok) {
-                    const data = await res.json();
-                    setLoginIpAllowed(data.allowed);
+                    const contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        try {
+                            const data = await res.json();
+                            setLoginIpAllowed(data.allowed);
+                        } catch (e: any) {
+                            // Silently ignore JSON parse errors
+                            setLoginIpAllowed(true);
+                        }
+                    } else {
+                        // Non-JSON response, allow access (fail open)
+                        setLoginIpAllowed(true);
+                    }
                 } else {
                     // On error, allow access (fail open)
                     setLoginIpAllowed(true);
                 }
             } catch (e: any) {
                 // On network error, assume allowed (fail open)
-                console.error('Login IP whitelist check error:', e);
+                // Only log if it's not a JSON parse error
+                if (e.name !== 'SyntaxError' || !e.message.includes('JSON')) {
+                    // Silently ignore - fail open
+                }
                 setLoginIpAllowed(true);
             } finally {
                 setCheckingLoginIp(false);

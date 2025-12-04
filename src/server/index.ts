@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import cors from 'cors';
 import { db } from './db';
 import { servers, backupLogs, users, sessions, cronJobs, ipWhitelist, loginIpWhitelist } from './db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,6 +11,20 @@ import { isIpWhitelisted, isLoginIpWhitelisted, getClientIp, validateIpOrCidr } 
 const app = express();
 const defaultPort = Number(process.env.PORT) || 3000;
 let port = defaultPort;
+
+// CORS configuration - allow requests from frontend domain
+app.use(cors({
+    origin: [
+        'https://bk.lyarinet.com',
+        'http://localhost:5173', // Vite dev server
+        'http://localhost:3000',
+        'capacitor://localhost', // Capacitor iOS
+        'http://localhost', // Capacitor Android
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 app.use(express.json());
 app.set('trust proxy', true);
@@ -937,6 +952,19 @@ app.get('/oauth_callback', async (req, res) => {
             </html>
         `);
     }
+});
+
+// Root path handler - return API info
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Multi-Server Backup Manager API',
+        version: '1.0.0',
+        endpoints: {
+            health: '/health',
+            api: '/api/*',
+            docs: 'See README.md for API documentation'
+        }
+    });
 });
 
 // Serve frontend in production

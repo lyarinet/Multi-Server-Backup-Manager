@@ -444,6 +444,8 @@ export function getTheme(id: string): Theme | undefined {
 export function applyTheme(theme: Theme) {
     const root = document.documentElement;
     Object.entries(theme.variables).forEach(([key, value]) => {
-        root.style.setProperty(`--${key}`, value);
+        // Convert camelCase to kebab-case for CSS variables
+        const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        root.style.setProperty(`--${cssKey}`, value);
     });
 }

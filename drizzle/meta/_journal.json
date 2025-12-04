@@ -1,0 +1,112 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1733337600000,
+      "tag": "0000_thankful_pestilence",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1733337700000,
+      "tag": "0001_large_ultimo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1733337800000,
+      "tag": "0002_natural_wild_child",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1733337900000,
+      "tag": "0003_backup_paths",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1733338000000,
+      "tag": "0004_db_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1733338100000,
+      "tag": "0005_db_port",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1733338200000,
+      "tag": "0006_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1733338300000,
+      "tag": "0007_round_chameleon",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1733338400000,
+      "tag": "0008_drive_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1733338500000,
+      "tag": "0009_ssl_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1733338600000,
+      "tag": "0010_wakeful_marrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1733338700000,
+      "tag": "0011_ordinary_ronan",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1733338800000,
+      "tag": "0012_clumsy_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1733338900000,
+      "tag": "0013_chubby_umar",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1733339000000,
+      "tag": "0014_tearful_magneto",
+      "breakpoints": true
+    }
+  ]
+}
+

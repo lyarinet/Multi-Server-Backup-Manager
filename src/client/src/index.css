@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default theme variables - will be overridden by applyTheme() */
+    --background: 210 4% 94%;
+    --foreground: 210 29% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 29% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 29% 15%;
+    --primary: 204 70% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 4% 95%;
+    --secondary-foreground: 204 70% 20%;
+    --muted: 210 4% 90%;
+    --muted-foreground: 210 8% 45%;
+    --accent: 174 70% 41%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 78% 57%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 4% 85%;
+    --input: 210 4% 90%;
+    --ring: 204 70% 53%;
+    --radius: 0.75rem;
+    --shadow: 210 29% 10% / 0.08;
+    --shadow-lg: 210 29% 10% / 0.12;
+    --border-width: 1px;
+    --spacing: 1;
+    --animation-speed: 0.25s;
+    --font-weight: 400;
+    --letter-spacing: normal;
+    --glass-opacity: 0.95;
+    --glass-blur: 8px;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .theme-shadow {
+    box-shadow: 0 1px 3px 0 hsl(var(--shadow));
+  }
+
+  .theme-shadow-md {
+    box-shadow: 0 4px 6px -1px hsl(var(--shadow)), 0 2px 4px -1px hsl(var(--shadow));
+  }
+
+  .theme-shadow-lg {
+    box-shadow: 0 10px 15px -3px hsl(var(--shadow-lg)), 0 4px 6px -2px hsl(var(--shadow-lg));
+  }
+}
+

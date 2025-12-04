@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { LocalDirectoryBrowser } from '../components/LocalDirectoryBrowser';
+import { getApiBaseUrl, setApiBaseUrl } from '../config/api';
 import {
     Settings as SettingsIcon,
     Folder,
@@ -72,8 +73,14 @@ export default function SettingsPage() {
     const [autostartStatus, setAutostartStatus] = useState<any>(null);
     const [autostartLoading, setAutostartLoading] = useState(false);
 
+    // API Configuration state
+    const [apiBaseUrl, setApiBaseUrlState] = useState('');
+    const [apiUrlLoading, setApiUrlLoading] = useState(false);
+    const [apiUrlSaving, setApiUrlSaving] = useState(false);
+
     // Collapsible sections state
     const [expandedSections, setExpandedSections] = useState({
+        apiConfig: true,
         security: true,
         globalConfig: true,
         cloudStorage: true,
@@ -112,7 +119,22 @@ export default function SettingsPage() {
                 }
                 throw new Error(`Failed to load servers: ${res.status} ${res.statusText}`);
                 }
-                const data = await res.json();
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    // Server not running - Vite dev server returned HTML
+                    // Don't throw error, just set empty servers and show message
+                    setServers([]);
+                    setError('API server is not running. Please start the server with: npm run dev:server');
+                    return;
+                }
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e: any) {
+                    setServers([]);
+                    setError('Failed to parse servers response. Server may not be running.');
+                    return;
+                }
                 setServers(Array.isArray(data) ? data : []);
                 
             // Load settings
@@ -123,7 +145,19 @@ export default function SettingsPage() {
                 }
                 throw new Error(`Failed to load settings: ${sres.status} ${sres.statusText}`);
                 }
-                const sdata = await sres.json();
+                const sContentType = sres.headers.get('content-type');
+                if (!sContentType || !sContentType.includes('application/json')) {
+                    // Server not running - don't throw, just skip settings load
+                    console.warn('Settings endpoint returned non-JSON. API server may not be running.');
+                    return;
+                }
+                let sdata;
+                try {
+                    sdata = await sres.json();
+                } catch (e: any) {
+                    console.warn('Failed to parse settings response. Server may not be running.');
+                    return;
+                }
                 if (sdata && typeof sdata.globalLocalBackupPath === 'string') {
                     setGlobalLocalBackupPath(sdata.globalLocalBackupPath);
                 }
@@ -142,9 +176,14 @@ export default function SettingsPage() {
                 // Load cron jobs
                 await loadCronJobs();
             } catch (e: any) {
-                console.error('Settings load error:', e);
-            const errorMsg = e.message || 'Failed to load data. Check if the backend server is running on port 3010.';
-            setError(errorMsg);
+                // Only log actual errors, not expected ones (like server not running)
+                if (e.message && !e.message.includes('non-JSON') && !e.message.includes('parse')) {
+                    console.error('Settings load error:', e);
+                }
+                const errorMsg = e.message || 'Failed to load data. Check if the backend server is running on port 3010.';
+                if (errorMsg && !errorMsg.includes('non-JSON') && !errorMsg.includes('parse')) {
+                    setError(errorMsg);
+                }
             } finally {
                 setLoading(false);
             }
@@ -169,23 +208,47 @@ export default function SettingsPage() {
         try {
             const statusRes = await fetch('/api/login-ip-whitelist/status');
             if (statusRes.ok) {
-                const statusData = await statusRes.json();
-                setLoginIpWhitelistEnabled(statusData.enabled);
+                const contentType = statusRes.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const statusData = await statusRes.json();
+                        setLoginIpWhitelistEnabled(statusData.enabled);
+                    } catch (e) {
+                        // Silently ignore JSON parse errors
+                    }
+                }
             }
 
             const ipRes = await fetch('/api/login-ip-whitelist/current-ip');
             if (ipRes.ok) {
-                const ipData = await ipRes.json();
-                setLoginIpWhitelistCurrentIp(ipData.ip);
+                const contentType = ipRes.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const ipData = await ipRes.json();
+                        setLoginIpWhitelistCurrentIp(ipData.ip);
+                    } catch (e) {
+                        // Silently ignore JSON parse errors
+                    }
+                }
             }
 
             const entriesRes = await fetch('/api/login-ip-whitelist');
             if (entriesRes.ok) {
-                const entriesData = await entriesRes.json();
-                setLoginIpWhitelistEntries(Array.isArray(entriesData) ? entriesData : []);
+                const contentType = entriesRes.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const entriesData = await entriesRes.json();
+                        setLoginIpWhitelistEntries(Array.isArray(entriesData) ? entriesData : []);
+                    } catch (e) {
+                        // Silently ignore JSON parse errors
+                    }
+                }
             }
         } catch (e: any) {
-            console.error('Failed to load login IP whitelist:', e);
+            // Only log if it's not a network error (server not running)
+            if (e.name !== 'TypeError' || !e.message.includes('fetch')) {
+                console.error('Failed to load login IP whitelist:', e);
+            }
         }
     }, []);
 
@@ -198,20 +261,60 @@ export default function SettingsPage() {
             setAutostartLoading(true);
             const res = await fetch('/api/autostart/status');
             if (res.ok) {
-                const data = await res.json();
-                setAutostartStatus(data);
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const data = await res.json();
+                        setAutostartStatus(data);
+                    } catch (e) {
+                        // Silently ignore JSON parse errors
+                    }
+                }
             }
-        } catch (e) {
-            console.error('Failed to load autostart status:', e);
+        } catch (e: any) {
+            // Only log if it's not a network error (server not running)
+            if (e.name !== 'TypeError' || !e.message.includes('fetch')) {
+                console.error('Failed to load autostart status:', e);
+            }
         } finally {
             setAutostartLoading(false);
         }
+    }, []);
+
+    // Load API URL configuration
+    useEffect(() => {
+        const loadApiUrl = async () => {
+            setApiUrlLoading(true);
+            try {
+                const url = await getApiBaseUrl();
+                setApiBaseUrlState(url);
+            } catch (e) {
+                console.error('Failed to load API URL:', e);
+            } finally {
+                setApiUrlLoading(false);
+            }
+        };
+        loadApiUrl();
     }, []);
 
     useEffect(() => {
         loadData();
         loadAutostartStatus();
     }, [loadData, loadAutostartStatus]);
+
+    const handleSaveApiUrl = async () => {
+        setApiUrlSaving(true);
+        try {
+            await setApiBaseUrl(apiBaseUrl);
+            alert('API URL saved successfully! The app will use this URL for all API calls.');
+            // Reload to apply changes
+            window.location.reload();
+        } catch (e: any) {
+            alert(`Failed to save API URL: ${e.message || 'Unknown error'}`);
+        } finally {
+            setApiUrlSaving(false);
+        }
+    };
 
     const handleSaveGlobalPath = async () => {
         setSaving(true);
@@ -290,6 +393,73 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-8">
+                {/* API Configuration Section */}
+                <section>
+                    <button
+                        onClick={() => toggleSection('apiConfig')}
+                        className="w-full text-xl font-semibold mb-4 flex items-center justify-between gap-2 hover:text-primary transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-primary" />
+                            API Configuration
+                        </div>
+                        {expandedSections.apiConfig ? (
+                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        )}
+                    </button>
+                    {expandedSections.apiConfig && (
+                        <div className="bg-card border border-border rounded-[var(--radius)] p-6 theme-shadow hover:theme-shadow-md transition-all">
+                            <div className="max-w-2xl space-y-4">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        Configure the API base URL for the application. This is especially important for mobile apps or when accessing the API from a different domain.
+                                    </p>
+                                    <label className="block text-sm font-medium mb-2">
+                                        API Base URL
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full h-10 px-3 rounded-[var(--radius)] border border-input bg-background focus:ring-2 focus:ring-ring focus:border-input transition-all font-mono text-sm"
+                                        value={apiBaseUrl}
+                                        onChange={(e) => setApiBaseUrlState(e.target.value)}
+                                        placeholder="https://your-server.com:3010 or http://192.168.1.100:3010"
+                                        disabled={apiUrlLoading}
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        Leave empty to use relative URLs (works with Vite proxy in development).
+                                        <br />
+                                        For mobile apps, enter the full URL including protocol (http:// or https://) and port.
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={handleSaveApiUrl}
+                                        disabled={apiUrlSaving || apiUrlLoading}
+                                        className="gap-2"
+                                    >
+                                        <Save className="w-4 h-4" />
+                                        {apiUrlSaving ? 'Saving...' : 'Save API URL'}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={async () => {
+                                            setApiBaseUrlState('');
+                                            await setApiBaseUrl('');
+                                            alert('API URL reset. Using relative URLs.');
+                                            window.location.reload();
+                                        }}
+                                        disabled={apiUrlSaving || apiUrlLoading}
+                                    >
+                                        Reset to Default
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
+
                 {/* Security Section */}
                 <section>
                     <button
