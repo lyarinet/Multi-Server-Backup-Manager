@@ -18,8 +18,8 @@
         "android:build": "npm run build:client && npx cap sync android",
         "android:open": "npx cap open android",
         "android:run": "npm run android:build && npx cap run android",
-        "android:build-apk": "npm run android:build && cd android && ./gradlew assembleDebug && echo 'APK location: android/app/build/outputs/apk/debug/app-debug.apk'",
-        "android:build-apk-release": "npm run android:build && cd android && ./gradlew assembleRelease && echo 'APK location: android/app/build/outputs/apk/release/app-release.apk'",
+        "android:build-apk": "npm run android:build && cd android && export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64} && chmod +x gradlew && ./gradlew assembleDebug && echo '✅ APK built successfully at: android/app/build/outputs/apk/debug/app-debug.apk'",
+        "android:build-apk-release": "npm run android:build && cd android && export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64} && chmod +x gradlew && ./gradlew assembleRelease && echo '✅ APK built successfully at: android/app/build/outputs/apk/release/app-release.apk'",
         "ios:build": "npm run build:client && npx cap sync ios",
         "ios:open": "npx cap open ios",
         "ios:run": "npm run ios:build && npx cap run ios"

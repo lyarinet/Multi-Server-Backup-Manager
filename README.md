@@ -629,13 +629,33 @@ export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/
 
 **Building on Linux Server (No GUI):**
 ```bash
-# Install Android SDK and build tools (if not already installed)
-# Then build APK directly:
+# 1. Install Java JDK (required for Gradle)
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+
+# 2. Set JAVA_HOME (optional, script will auto-detect)
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# 3. Build APK directly:
 npm run android:build-apk
 
 # Or manually with Gradle:
 cd android
+export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}
 ./gradlew assembleDebug
+```
+
+**Java Not Found Error:**
+```bash
+# Install Java JDK
+sudo apt install -y openjdk-17-jdk
+
+# Verify installation
+java -version
+
+# Set JAVA_HOME permanently (add to ~/.bashrc or ~/.zshrc)
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 **CORS Errors:**
