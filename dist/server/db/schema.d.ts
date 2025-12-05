@@ -458,6 +458,23 @@ export declare const settings: import("drizzle-orm/sqlite-core").SQLiteTableWith
             identity: undefined;
             generated: undefined;
         }, object>;
+        apiBaseUrl: import("drizzle-orm/sqlite-core").SQLiteColumn<{
+            name: "api_base_url";
+            tableName: "settings";
+            dataType: "string";
+            columnType: "SQLiteText";
+            data: string;
+            driverParam: string;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, object>;
         driveClientId: import("drizzle-orm/sqlite-core").SQLiteColumn<{
             name: "drive_client_id";
             tableName: "settings";

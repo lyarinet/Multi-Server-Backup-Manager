@@ -31,6 +31,7 @@ export const backupLogs = sqliteTable('backup_logs', {
 export const settings = sqliteTable('settings', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     globalLocalBackupPath: text('global_local_backup_path'),
+    apiBaseUrl: text('api_base_url'),
     driveClientId: text('drive_client_id'),
     driveClientSecret: text('drive_client_secret'),
     driveRefreshToken: text('drive_refresh_token'),

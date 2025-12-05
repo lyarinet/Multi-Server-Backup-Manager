@@ -1015,6 +1015,7 @@ app.get('/api/settings', authMiddleware, async (_req, res) => {
 app.put('/api/settings', authMiddleware, async (req, res) => {
     const schema = z.object({
         globalLocalBackupPath: z.string().optional(),
+        apiBaseUrl: z.string().optional(),
         driveClientId: z.string().optional(),
         driveClientSecret: z.string().optional(),
         driveRefreshToken: z.string().optional(),

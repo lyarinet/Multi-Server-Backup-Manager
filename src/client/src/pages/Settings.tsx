@@ -162,6 +162,12 @@ export default function SettingsPage() {
                     setGlobalLocalBackupPath(sdata.globalLocalBackupPath);
                 }
                 if (sdata) {
+                    // Load API Base URL from database, fallback to localStorage
+                    if (sdata.apiBaseUrl) {
+                        setApiBaseUrlState(sdata.apiBaseUrl);
+                        // Also sync to localStorage
+                        await setApiBaseUrl(sdata.apiBaseUrl);
+                    }
                     setSslEnabled(!!sdata.sslEnabled);
                     setSslPort(typeof sdata.sslPort === 'number' ? sdata.sslPort : '');
                     setSslCertPath(sdata.sslCertPath || '');
@@ -281,11 +287,12 @@ export default function SettingsPage() {
         }
     }, []);
 
-    // Load API URL configuration
+    // Load API URL configuration (fallback to localStorage if database doesn't have it)
     useEffect(() => {
         const loadApiUrl = async () => {
             setApiUrlLoading(true);
             try {
+                // First try to get from localStorage (will be synced from database by loadData)
                 const url = await getApiBaseUrl();
                 setApiBaseUrlState(url);
             } catch (e) {
@@ -305,7 +312,22 @@ export default function SettingsPage() {
     const handleSaveApiUrl = async () => {
         setApiUrlSaving(true);
         try {
+            // Save to database via API
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    apiBaseUrl: apiBaseUrl || '',
+                }),
+            });
+            if (!res.ok) {
+                const j = await res.json();
+                throw new Error(j?.error || 'Failed to save API URL');
+            }
+            
+            // Also save to localStorage for immediate use
             await setApiBaseUrl(apiBaseUrl);
+            
             alert('API URL saved successfully! The app will use this URL for all API calls.');
             // Reload to apply changes
             window.location.reload();

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
+import { buildApiUrl } from '../config/api';
 
 export default function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     const [username, setUsername] = useState('');
@@ -13,7 +14,8 @@ export default function LoginPage({ onLogin }: { onLogin: (token: string) => voi
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 10000);
         try {
-            const res = await fetch('/api/auth/login', {
+            const apiUrl = await buildApiUrl('/api/auth/login');
+            const res = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
