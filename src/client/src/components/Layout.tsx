@@ -45,7 +45,7 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                     <div className="flex justify-between h-14 sm:h-16">
                         <div className="flex flex-1">
                             <div className="flex-shrink-0 flex items-center min-w-0">
-                                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-primary truncate">Multi-Server Backup Manager</h1>
+                                <h1 className="text-sm sm:text-base lg:text-lg font-bold text-primary truncate">Backup Manager</h1>
                             </div>
                             {isAuthenticated && (
                                 <div className="ml-6 flex space-x-1 sm:space-x-8 flex-1">
@@ -72,8 +72,8 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                             )}
                         </div>
                         {isAuthenticated && (
-                            <div className="ml-4 flex items-center gap-2">
-                                {/* Theme Switcher */}
+                            <div className="hidden sm:flex ml-4 items-center gap-2">
+                                {/* Theme Switcher - Desktop Only */}
                                 <div className="relative">
                                     <Button
                                         variant="ghost"
@@ -114,7 +114,7 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                                         </>
                                     )}
                                 </div>
-                                {/* Logout Button */}
+                                {/* Logout Button - Desktop Only */}
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -126,19 +126,20 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                                 </Button>
                             </div>
                         )}
-                        {/* Mobile menu button */}
+                        {/* Mobile menu button - Always visible on mobile */}
                         {isAuthenticated && (
-                            <div className="sm:hidden flex items-center">
+                            <div className="sm:hidden flex items-center ml-2">
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                     aria-label="Toggle menu"
+                                    className="h-10 w-10"
                                 >
                                     {mobileMenuOpen ? (
-                                        <X className="w-5 h-5" />
+                                        <X className="w-6 h-6" />
                                     ) : (
-                                        <Menu className="w-5 h-5" />
+                                        <Menu className="w-6 h-6" />
                                     )}
                                 </Button>
                             </div>
@@ -148,7 +149,7 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
 
                 {/* Mobile menu */}
                 {isAuthenticated && mobileMenuOpen && (
-                    <div className="sm:hidden border-t border-border">
+                    <div className="sm:hidden border-t border-border bg-card">
                         <div className="pt-2 pb-3 space-y-1">
                             {navigation.map((item) => {
                                 const Icon = item.icon;
@@ -157,21 +158,21 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                                         key={item.name}
                                         onClick={() => handleNavClick(item.href)}
                                         className={`
-                                            w-full flex items-center px-3 py-2 text-base font-medium transition-colors
+                                            w-full flex items-center px-4 py-3 text-base font-medium transition-colors
                                             ${item.current
                                                 ? 'bg-accent text-accent-foreground border-l-4 border-primary'
-                                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                                : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                                             }
                                         `}
                                     >
-                                        <Icon className="w-5 h-5 mr-3" />
-                                        {item.name}
+                                        <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>{item.name}</span>
                                     </button>
                                 );
                             })}
                             <div className="border-t border-border pt-2 mt-2 space-y-1">
                                 {/* Theme Switcher in Mobile */}
-                                <div className="px-3 py-2">
+                                <div className="px-4 py-2">
                                     <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Theme</div>
                                     <div className="space-y-1">
                                         {allThemes.map((theme) => (
@@ -185,7 +186,7 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                                                     w-full text-left px-3 py-2 text-sm rounded transition-colors
                                                     ${currentTheme.id === theme.id
                                                         ? 'bg-accent text-accent-foreground'
-                                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                                                     }
                                                 `}
                                             >
@@ -200,10 +201,10 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
                                             onLogout();
                                             setMobileMenuOpen(false);
                                         }}
-                                        className="w-full flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        className="w-full flex items-center px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                     >
-                                        <LogOut className="w-5 h-5 mr-3" />
-                                        Logout
+                                        <LogOut className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>Logout</span>
                                     </button>
                                 </div>
                             </div>
