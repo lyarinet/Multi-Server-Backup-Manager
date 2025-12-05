@@ -53,8 +53,49 @@ if [ "$FAST" = "1" ] || [ "$SKIP_BUILD" = "1" ]; then
   echo "🔨 Skipping server build (FAST mode)"
 else
   echo "🔨 Building server..."
-  npm run build:server
-  echo "✅ Server built successfully"
+  if npm run build:server 2>&1; then
+    echo "✅ Server built successfully"
+  else
+    echo "⚠️  Server build had errors, but continuing..."
+    echo "   Run 'npm run build:server' manually to see full errors"
+  fi
+fi
+
+# Android SDK setup (for mobile builds)
+if [ "$FAST" = "1" ] || [ "$SKIP_ANDROID_SDK" = "1" ]; then
+  echo "🤖 Skipping Android SDK check (FAST mode)"
+else
+  echo "🤖 Checking Android SDK..."
+  
+  # Check if Android SDK is configured
+  ANDROID_SDK_PATH=""
+  if [ -n "$ANDROID_HOME" ]; then
+    ANDROID_SDK_PATH="$ANDROID_HOME"
+  elif [ -d "$HOME/Android/Sdk" ]; then
+    ANDROID_SDK_PATH="$HOME/Android/Sdk"
+  elif [ -d "$HOME/.android/sdk" ]; then
+    ANDROID_SDK_PATH="$HOME/.android/sdk"
+  fi
+  
+  if [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ]; then
+    echo "✅ Android SDK found at: $ANDROID_SDK_PATH"
+    export ANDROID_HOME="$ANDROID_SDK_PATH"
+    
+    # Create/update local.properties file
+    if [ -d "android" ]; then
+      echo "📝 Updating android/local.properties..."
+      echo "sdk.dir=$ANDROID_SDK_PATH" > android/local.properties
+      echo "✅ Android SDK configured"
+    fi
+  else
+    echo "⚠️  Android SDK not found"
+    echo "   To build Android APK, install Android SDK:"
+    echo "   1. Install Android Studio or command-line tools"
+    echo "   2. Set ANDROID_HOME environment variable"
+    echo "   3. Or create android/local.properties with: sdk.dir=/path/to/android/sdk"
+    echo ""
+    echo "   For now, Android builds will be skipped."
+  fi
 fi
 
 # Kill any processes using the ports

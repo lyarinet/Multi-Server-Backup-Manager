@@ -271,7 +271,7 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
 });
 
 // API Routes
-app.get('/api/servers', authMiddleware, async (req, res) => {
+app.get('/api/servers', authMiddleware, async (_req, res) => {
     const allServers = await db.select().from(servers);
     const normalized = allServers.map((s: any) => ({
         ...s,
@@ -955,7 +955,7 @@ app.get('/oauth_callback', async (req, res) => {
 });
 
 // Root path handler - return API info
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
     res.json({
         message: 'Multi-Server Backup Manager API',
         version: '1.0.0',
@@ -970,7 +970,7 @@ app.get('/', (req, res) => {
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client')));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
         res.sendFile(path.join(__dirname, '../client/index.html'));
     });
 }
@@ -1057,7 +1057,7 @@ startHttpServer(port);
         console.error('Failed to start HTTPS server:', (e as any)?.message || e);
     }
 })();
-app.get('/api/settings', authMiddleware, async (req, res) => {
+app.get('/api/settings', authMiddleware, async (_req, res) => {
     try {
         const rows = await db.select().from(settings).limit(1);
         res.json(rows[0] || {});
@@ -1201,7 +1201,7 @@ app.get('/api/drive/redirect-uri', authMiddleware, (req, res) => {
 });
 
 // Test Drive connection
-app.get('/api/drive/test', authMiddleware, async (req, res) => {
+app.get('/api/drive/test', authMiddleware, async (_req, res) => {
     try {
         // Check if Drive is configured first
         const set = await db.select().from(settings).limit(1);
@@ -1266,7 +1266,7 @@ app.get('/api/drive/folders', authMiddleware, async (req, res) => {
 });
 
 // Get root folder
-app.get('/api/drive/root', authMiddleware, async (req, res) => {
+app.get('/api/drive/root', authMiddleware, async (_req, res) => {
     try {
         const driveService = await getDriveService()();
         const root = await driveService.getRootFolder();
@@ -1521,7 +1521,7 @@ app.get('/api/backups/download', async (req, res) => {
     });
 });
 // Cron Jobs API
-app.get('/api/cron-jobs', authMiddleware, async (req, res) => {
+app.get('/api/cron-jobs', authMiddleware, async (_req, res) => {
     try {
         const jobs = await db.select().from(cronJobs).all();
         // Join with servers to get server names
@@ -1714,7 +1714,7 @@ app.delete('/api/cron-jobs/:id', authMiddleware, async (req, res) => {
 });
 
 // IP Whitelist Management API
-app.get('/api/ip-whitelist/status', authMiddleware, async (req, res) => {
+app.get('/api/ip-whitelist/status', authMiddleware, async (_req, res) => {
     try {
         const settingsRows = await db.select().from(settings).limit(1);
         const config = settingsRows[0] as any;
@@ -1745,7 +1745,7 @@ app.get('/api/ip-whitelist/current-ip', authMiddleware, (req, res) => {
     }
 });
 
-app.get('/api/ip-whitelist', authMiddleware, async (req, res) => {
+app.get('/api/ip-whitelist', authMiddleware, async (_req, res) => {
     try {
         const entries = await db.select().from(ipWhitelist).orderBy(ipWhitelist.createdAt).all();
         res.json(entries);
@@ -1851,7 +1851,7 @@ app.get('/api/login-ip-whitelist/check', async (req, res) => {
     }
 });
 
-app.get('/api/login-ip-whitelist/status', authMiddleware, async (req, res) => {
+app.get('/api/login-ip-whitelist/status', authMiddleware, async (_req, res) => {
     try {
         const settingsRows = await db.select().from(settings).limit(1);
         const config = settingsRows[0] as any;
@@ -1873,7 +1873,7 @@ app.get('/api/login-ip-whitelist/current-ip', authMiddleware, (req, res) => {
     }
 });
 
-app.get('/api/login-ip-whitelist', authMiddleware, async (req, res) => {
+app.get('/api/login-ip-whitelist', authMiddleware, async (_req, res) => {
     try {
         const entries = await db.select().from(loginIpWhitelist).orderBy(loginIpWhitelist.createdAt).all();
         res.json(entries);
@@ -1962,7 +1962,7 @@ app.put('/api/login-ip-whitelist/enable', authMiddleware, async (req, res) => {
 });
 
 // Autostart Management
-app.get('/api/autostart/status', authMiddleware, async (req, res) => {
+app.get('/api/autostart/status', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2007,7 +2007,7 @@ app.get('/api/autostart/status', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/install', authMiddleware, async (req, res) => {
+app.post('/api/autostart/install', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2039,7 +2039,7 @@ app.post('/api/autostart/install', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/enable', authMiddleware, async (req, res) => {
+app.post('/api/autostart/enable', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2076,7 +2076,7 @@ app.post('/api/autostart/enable', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/disable', authMiddleware, async (req, res) => {
+app.post('/api/autostart/disable', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2113,7 +2113,7 @@ app.post('/api/autostart/disable', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
     try {
         // Test database connection
         await db.select().from(users).limit(1);

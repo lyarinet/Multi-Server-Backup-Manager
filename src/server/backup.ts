@@ -51,15 +51,15 @@ export class BackupManager {
                         conn.end();
                         return reject(err);
                     }
-                    stream.on('close', (code, signal) => {
+                    stream.on('close', (code: number) => {
                         conn.end();
                         if (code !== 0) {
                             reject(new Error(`Command failed with code ${code}`));
                         } else {
                             resolve();
                         }
-                    }).on('data', (data) => {
-                        this.log(`STDOUT: ${data}`);
+                    }).on('data', (data: Buffer) => {
+                        this.log(`STDOUT: ${data.toString()}`);
                     }).stderr.on('data', (data) => {
                         this.log(`STDERR: ${data}`);
                     });

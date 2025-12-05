@@ -1,37 +1,31 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BackupManager = void 0;
-const ssh2_1 = require("ssh2");
-const fs_1 = require("fs");
-const child_process_1 = require("child_process");
-const path_1 = __importDefault(require("path"));
-const db_1 = require("./db");
-const schema_1 = require("./db/schema");
-const drizzle_orm_1 = require("drizzle-orm");
-class BackupManager {
+import { Client } from 'ssh2';
+import fs from 'fs';
+import { exec } from 'child_process';
+import path from 'path';
+import { db } from './db';
+import { backupLogs } from './db/schema';
+import { eq } from 'drizzle-orm';
+export class BackupManager {
     constructor(config, logId) {
         this.config = config;
         this.logId = logId;
     }
     async log(message) {
         console.log(`[Backup ${this.logId}] ${message}`);
-        const currentLog = await db_1.db.select().from(schema_1.backupLogs).where((0, drizzle_orm_1.eq)(schema_1.backupLogs.id, this.logId));
+        const currentLog = await db.select().from(backupLogs).where(eq(backupLogs.id, this.logId));
         const newLogs = (currentLog[0]?.logs || '') + `${new Date().toISOString()}: ${message}\n`;
-        await db_1.db.update(schema_1.backupLogs).set({ logs: newLogs }).where((0, drizzle_orm_1.eq)(schema_1.backupLogs.id, this.logId));
+        await db.update(backupLogs).set({ logs: newLogs }).where(eq(backupLogs.id, this.logId));
     }
     async executeRemote(command) {
         return new Promise((resolve, reject) => {
-            const conn = new ssh2_1.Client();
+            const conn = new Client();
             conn.on('ready', () => {
                 conn.exec(command, (err, stream) => {
                     if (err) {
                         conn.end();
                         return reject(err);
                     }
-                    stream.on('close', (code, signal) => {
+                    stream.on('close', (code) => {
                         conn.end();
                         if (code !== 0) {
                             reject(new Error(`Command failed with code ${code}`));
@@ -40,7 +34,7 @@ class BackupManager {
                             resolve();
                         }
                     }).on('data', (data) => {
-                        this.log(`STDOUT: ${data}`);
+                        this.log(`STDOUT: ${data.toString()}`);
                     }).stderr.on('data', (data) => {
                         this.log(`STDERR: ${data}`);
                     });
@@ -52,13 +46,15 @@ class BackupManager {
                 port: this.config.port,
                 username: this.config.username,
                 // Prefer password authentication if password is provided, otherwise use private key
-                ...(this.config.password ? { password: this.config.password } : { privateKey: this.config.privateKeyPath ? (0, fs_1.readFileSync)(this.config.privateKeyPath) : undefined }),
+                ...(this.config.password
+                    ? { password: this.config.password }
+                    : { privateKey: this.config.privateKeyPath ? fs.readFileSync(this.config.privateKeyPath) : undefined }),
             });
         });
     }
     async executeLocal(command) {
         return new Promise((resolve, reject) => {
-            (0, child_process_1.exec)(command, (error, stdout, stderr) => {
+            exec(command, (error, stdout, stderr) => {
                 if (error) {
                     this.log(`Local Error: ${error.message}`);
                     return reject(error);
@@ -74,7 +70,7 @@ class BackupManager {
     async transferViaSFTP(remoteDir, localDir) {
         await this.log(`Starting SFTP transfer from ${remoteDir} to ${localDir}`);
         return new Promise((resolve, reject) => {
-            const conn = new ssh2_1.Client();
+            const conn = new Client();
             conn.on('ready', () => {
                 this.log('SFTP Connection ready');
                 conn.sftp((err, sftp) => {
@@ -99,7 +95,7 @@ class BackupManager {
                             for (const f of files) {
                                 await this.log(`SFTP downloading: ${f}`);
                                 await new Promise((res, rej) => {
-                                    sftp.fastGet(`${remoteDir}/${f}`, path_1.default.join(localDir, f), (e3) => {
+                                    sftp.fastGet(`${remoteDir}/${f}`, path.join(localDir, f), (e3) => {
                                         if (e3) {
                                             this.log(`SFTP failed to download ${f}: ${e3.message}`);
                                             rej(e3);
@@ -128,7 +124,9 @@ class BackupManager {
                 host: this.config.host,
                 port: this.config.port,
                 username: this.config.username,
-                ...(this.config.password ? { password: this.config.password } : { privateKey: this.config.privateKeyPath ? (0, fs_1.readFileSync)(this.config.privateKeyPath) : undefined }),
+                ...(this.config.password
+                    ? { password: this.config.password }
+                    : { privateKey: this.config.privateKeyPath ? fs.readFileSync(this.config.privateKeyPath) : undefined }),
             });
         });
     }
@@ -144,32 +142,32 @@ class BackupManager {
                 return p;
             if (p.startsWith('~')) {
                 const h = process.env.HOME || '';
-                return path_1.default.join(h, p.slice(1));
+                return path.join(h, p.slice(1));
             }
             return p;
         };
-        let basePath = expandTilde(this.config.localBackupPath || path_1.default.join(process.env.HOME || '', 'Server-Backups'));
+        let basePath = expandTilde(this.config.localBackupPath || path.join(process.env.HOME || '', 'Server-Backups')) || '';
         if (this.config.localBackupPath) {
             await this.log(`Using server-specific local backup path: ${this.config.localBackupPath}`);
         }
         else {
             await this.log(`Using default/global local backup path: ${basePath}`);
         }
-        basePath = path_1.default.resolve(basePath);
+        basePath = path.resolve(basePath);
         try {
-            await fs_1.promises.mkdir(basePath, { recursive: true });
-            await fs_1.promises.access(basePath, fs_1.constants.W_OK);
+            await fs.promises.mkdir(basePath, { recursive: true });
+            await fs.promises.access(basePath, fs.constants.W_OK);
         }
         catch {
-            const fallback = path_1.default.join(process.env.HOME || '', 'Server-Backups');
+            const fallback = path.join(process.env.HOME || '', 'Server-Backups');
             await this.log(`Local backup path ${basePath} not writable, using fallback: ${fallback}`);
-            await fs_1.promises.mkdir(fallback, { recursive: true });
+            await fs.promises.mkdir(fallback, { recursive: true });
             basePath = fallback;
         }
-        const localBackupDir = path_1.default.join(basePath, dirName);
+        const localBackupDir = path.join(basePath, dirName);
         const prefix = `${safeName}_`;
         try {
-            await db_1.db.update(schema_1.backupLogs).set({ status: 'running' }).where((0, drizzle_orm_1.eq)(schema_1.backupLogs.id, this.logId));
+            await db.update(backupLogs).set({ status: 'running' }).where(eq(backupLogs.id, this.logId));
             await this.log('Starting backup process...');
             // 1. Create remote directory
             await this.log(`Creating remote directory: ${remoteTmpDir}`);
@@ -235,7 +233,7 @@ class BackupManager {
             }
             // 4. Rsync to local
             await this.log(`Rsyncing to local: ${localBackupDir}`);
-            await fs_1.promises.mkdir(localBackupDir, { recursive: true });
+            await fs.promises.mkdir(localBackupDir, { recursive: true });
             // Note: Using system rsync as it's more robust for file transfer than implementing via ssh2 streams manually
             let rsh;
             if (!this.config.privateKeyPath && this.config.password) {
@@ -264,13 +262,13 @@ class BackupManager {
             await this.log('Cleaning up remote files...');
             await this.executeRemote(`rm -rf ${remoteTmpDir}`);
             await this.log('Backup completed successfully.');
-            await db_1.db.update(schema_1.backupLogs).set({ status: 'success' }).where((0, drizzle_orm_1.eq)(schema_1.backupLogs.id, this.logId));
+            await db.update(backupLogs).set({ status: 'success' }).where(eq(backupLogs.id, this.logId));
         }
         catch (error) {
             await this.log(`Backup failed: ${error.message}`);
-            await db_1.db.update(schema_1.backupLogs).set({ status: 'failed' }).where((0, drizzle_orm_1.eq)(schema_1.backupLogs.id, this.logId));
+            await db.update(backupLogs).set({ status: 'failed' }).where(eq(backupLogs.id, this.logId));
             throw error;
         }
     }
 }
-exports.BackupManager = BackupManager;
+//# sourceMappingURL=backup.js.map

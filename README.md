@@ -636,13 +636,30 @@ sudo apt install -y openjdk-17-jdk
 # 2. Set JAVA_HOME (optional, script will auto-detect)
 export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
-# 3. Build APK directly:
-npm run android:build-apk
+# 3. Install Android SDK Command-Line Tools
+# Download from: https://developer.android.com/studio#command-tools
+# Or install via package manager:
+mkdir -p ~/Android/Sdk
+cd ~/Android/Sdk
+wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip commandlinetools-linux-*_latest.zip
+mkdir -p cmdline-tools/latest
+mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+rm commandlinetools-linux-*_latest.zip
 
-# Or manually with Gradle:
-cd android
-export JAVA_HOME=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}
-./gradlew assembleDebug
+# 4. Set ANDROID_HOME
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# 5. Accept licenses and install required SDK components
+yes | sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+# 6. Create local.properties file (or let start.sh do it)
+echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+# 7. Build APK
+npm run android:build-apk
 ```
 
 **Java Not Found Error:**
@@ -656,6 +673,34 @@ java -version
 # Set JAVA_HOME permanently (add to ~/.bashrc or ~/.zshrc)
 echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
 source ~/.bashrc
+```
+
+**Android SDK Not Found Error:**
+```bash
+# Error: SDK location not found. Define a valid SDK location...
+
+# Solution 1: Install Android SDK Command-Line Tools
+mkdir -p ~/Android/Sdk
+cd ~/Android/Sdk
+wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip commandlinetools-linux-*_latest.zip
+mkdir -p cmdline-tools/latest
+mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+
+# Set environment variables
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# Accept licenses and install SDK components
+yes | sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+# Create local.properties
+echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+# Solution 2: Manual configuration
+# If SDK is installed elsewhere, create android/local.properties:
+echo "sdk.dir=/path/to/your/android/sdk" > android/local.properties
 ```
 
 **CORS Errors:**
