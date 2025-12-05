@@ -579,15 +579,82 @@ This application can be built as a native mobile app using Capacitor for both An
    - Click `Product` → `Archive`
    - Follow the prompts to create an IPA
 
+### App Icons
+
+The application includes automatic icon generation for both Android and iOS platforms.
+
+#### Generating App Icons
+
+Icons are automatically generated from a single source image:
+
+```bash
+# Generate all platform icons from assets/icon.png
+npm run icons:generate
+```
+
+This command will:
+- Generate Android icons for all densities (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)
+- Generate iOS app icons
+- Create splash screens for both platforms
+- Generate round icons for Android
+
+#### Creating Your Custom Icon
+
+**Option 1: Auto-Generate Icon**
+If you don't have an icon yet, the script will automatically generate one:
+
+```bash
+# This will create a default icon if none exists
+npm run icons:generate
+```
+
+**Option 2: Use Your Own Icon**
+1. Create a 1024x1024 PNG image
+2. Save it as `assets/icon.png`
+3. Run `npm run icons:generate`
+
+**Option 3: Use Online Tools**
+- [AppIcon.co](https://www.appicon.co/) - Upload and generate icons
+- [Favicon Generator](https://www.favicon-generator.org/) - Create icons from images
+- [Icon Kitchen](https://icon.kitchen/) - Design and export icons
+
+**Icon Requirements:**
+- Size: 1024x1024 pixels
+- Format: PNG with transparency (recommended)
+- Theme: Server/backup/cloud storage related
+- Colors: Use app theme colors (#0ea5e9 for primary)
+
+#### Icon Files Location
+
+After generation, icons are located at:
+- **Source**: `assets/icon.png` (1024x1024)
+- **Android**: `android/app/src/main/res/mipmap-*/`
+- **iOS**: `ios/App/App/Assets.xcassets/AppIcon.appiconset/`
+
+#### Customizing Icons
+
+To customize the icon:
+1. Edit or replace `assets/icon.png` with your 1024x1024 image
+2. Run `npm run icons:generate` to regenerate all sizes
+3. Rebuild the app: `npm run android:build-apk`
+
+**Note**: The icon generator uses `@capacitor/assets` which automatically creates all required sizes and formats for both platforms.
+
 ### API Configuration for Mobile Apps
 
 Before using the mobile app, configure the API base URL:
 
 1. Open the app
-2. Go to Settings
-3. Find "API Configuration" section
-4. Enter your API base URL (e.g., `https://apibk.lyarinet.com`)
-5. Save the configuration
+2. On first launch, you'll see "Configure API URL" option on the login screen
+3. Enter your API base URL (e.g., `https://apibk.lyarinet.com`)
+4. Save the configuration
+5. Login with your credentials
+
+Alternatively, you can configure it from Settings after login:
+1. Go to Settings
+2. Find "API Configuration" section
+3. Enter your API base URL
+4. Save the configuration
 
 **Important:** The API base URL should:
 - ✅ Include protocol: `https://` or `http://`
@@ -713,6 +780,13 @@ echo "sdk.dir=/path/to/your/android/sdk" > android/local.properties
 - Clean and rebuild: `npm run build:client && npm run android:build`
 - For Gradle errors, check `android/app/build.gradle` configuration
 - Ensure Java JDK is installed: `java -version`
+
+**Icon Not Showing:**
+- Regenerate icons: `npm run icons:generate`
+- Ensure `assets/icon.png` exists (1024x1024 PNG)
+- Rebuild the app after regenerating icons: `npm run android:build-apk`
+- Clear app cache and reinstall on device
+- Check that icons were generated in `android/app/src/main/res/mipmap-*/`
 
 ## License
 
