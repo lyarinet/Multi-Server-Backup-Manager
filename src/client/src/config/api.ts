@@ -142,11 +142,60 @@ export function buildApiUrlSync(path: string): string {
 }
 
 /**
+ * Load API URL from database (for mobile apps and web)
+ * This should be called after login to sync database settings
+ * Note: This uses the current API base URL to fetch settings, so it works even if API URL changes
+ */
+export async function loadApiUrlFromDatabase(): Promise<string | null> {
+    try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            return null; // Not logged in yet
+        }
+        
+        // Use buildApiUrl to get the full URL (works with current API base URL)
+        const apiUrl = await buildApiUrl('/api/settings');
+        const res = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        
+        if (res.ok) {
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await res.json();
+                if (data?.apiBaseUrl) {
+                    // Sync to localStorage and Capacitor Preferences
+                    await setApiBaseUrl(data.apiBaseUrl);
+                    return data.apiBaseUrl;
+                }
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to load API URL from database:', error);
+        return null;
+    }
+}
+
+/**
  * Initialize and cache the API URL on app startup
+ * For mobile apps, also tries to load from database if logged in
  */
 export async function initializeApiConfig(): Promise<void> {
     try {
+        // First try to get from localStorage/Capacitor Preferences
         cachedApiUrl = await getApiBaseUrl();
+        
+        // If we have a token, try to load from database (for mobile apps)
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            const dbUrl = await loadApiUrlFromDatabase();
+            if (dbUrl) {
+                cachedApiUrl = dbUrl;
+            }
+        }
     } catch (error) {
         console.error('Failed to initialize API config:', error);
     }

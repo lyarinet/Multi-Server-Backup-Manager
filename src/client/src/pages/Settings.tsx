@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { LocalDirectoryBrowser } from '../components/LocalDirectoryBrowser';
-import { getApiBaseUrl, setApiBaseUrl } from '../config/api';
+import { getApiBaseUrl, setApiBaseUrl, buildApiUrl } from '../config/api';
 import {
     Settings as SettingsIcon,
     Folder,
@@ -325,12 +325,17 @@ export default function SettingsPage() {
                 throw new Error(j?.error || 'Failed to save API URL');
             }
             
-            // Also save to localStorage for immediate use
+            // Also save to localStorage and Capacitor Preferences for immediate use
             await setApiBaseUrl(apiBaseUrl);
             
             alert('API URL saved successfully! The app will use this URL for all API calls.');
-            // Reload to apply changes
-            window.location.reload();
+            // For Android app, reload to apply changes
+            if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+                window.location.reload();
+            } else {
+                // For web, just reload
+                window.location.reload();
+            }
         } catch (e: any) {
             alert(`Failed to save API URL: ${e.message || 'Unknown error'}`);
         } finally {

@@ -41,11 +41,11 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
         <div className="min-h-screen bg-background">
             {/* Desktop Navigation */}
             <nav className="bg-card border-b border-border sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+                    <div className="flex justify-between h-14 sm:h-16">
                         <div className="flex flex-1">
-                            <div className="flex-shrink-0 flex items-center">
-                                <h1 className="text-xl font-bold text-primary">Multi-Server Backup Manager</h1>
+                            <div className="flex-shrink-0 flex items-center min-w-0">
+                                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-primary truncate">Multi-Server Backup Manager</h1>
                             </div>
                             {isAuthenticated && (
                                 <div className="ml-6 flex space-x-1 sm:space-x-8 flex-1">
@@ -213,7 +213,7 @@ export function Layout({ children, onLogout, isAuthenticated }: LayoutProps) {
             </nav>
 
             {/* Main content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-x-hidden">
                 {children}
             </main>
         </div>

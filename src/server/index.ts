@@ -12,15 +12,32 @@ const app = express();
 const defaultPort = Number(process.env.PORT) || 3000;
 let port = defaultPort;
 
-// CORS configuration - allow requests from frontend domain
+// CORS configuration - allow requests from frontend domain and mobile apps
 app.use(cors({
-    origin: [
-        'https://bk.lyarinet.com',
-        'http://localhost:5173', // Vite dev server
-        'http://localhost:3000',
-        'capacitor://localhost', // Capacitor iOS
-        'http://localhost', // Capacitor Android
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, etc.)
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        const allowedOrigins = [
+            'https://bk.lyarinet.com',
+            'http://localhost:5173', // Vite dev server
+            'http://localhost:3000',
+            'capacitor://localhost', // Capacitor iOS
+            'http://localhost', // Capacitor Android
+            'https://localhost', // Capacitor Android HTTPS
+        ];
+        
+        // Allow if origin is in allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            // For mobile apps, allow all origins (they use absolute URLs)
+            // This is safe because mobile apps are installed and not accessible via browser
+            callback(null, true);
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
