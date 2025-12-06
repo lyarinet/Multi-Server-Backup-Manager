@@ -14,7 +14,7 @@ const DEFAULT_API_URL = import.meta.env.VITE_API_BASE_URL || '';
  * - www.example.com -> api.example.com
  * - example.com -> api.example.com
  */
-function detectDefaultApiUrl(): string {
+export function detectDefaultApiUrl(): string {
     if (typeof window === 'undefined' || !window.location) {
         return '';
     }
@@ -23,9 +23,17 @@ function detectDefaultApiUrl(): string {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol; // http: or https:
     
-    // For web (development), use relative URLs
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.0.')) {
-        return ''; // Use relative URLs for local development
+    // For localhost, use relative URLs (Vite proxy handles it)
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return ''; // Use relative URLs for localhost (Vite proxy handles it)
+    }
+    
+    // For local network IPs, try to detect API URL with common port
+    if (hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.')) {
+        // For local network, try same IP with common API port
+        // e.g., 192.168.1.100 -> http://192.168.1.100:3010
+        // User can modify this in settings if different
+        return `${protocol}//${hostname}:3010`;
     }
     
     // Split hostname into parts
@@ -39,25 +47,21 @@ function detectDefaultApiUrl(): string {
         // Main domain (e.g., "example.com")
         return `${protocol}//api.${hostname}`;
     } else if (parts.length >= 3) {
-        // Subdomain + domain (e.g., "bk.lyarinet.com", "app.example.com")
+        // Subdomain + domain (e.g., "bk.lyarinet.com", "app.example.com", "test.example.com")
         const subdomain = parts[0];
         const domain = parts.slice(1).join('.'); // Get domain part
         
-        // Special case for lyarinet.com domains
-        if (hostname.includes('lyarinet.com')) {
-            if (subdomain === 'bk') {
-                return 'https://apibk.lyarinet.com';
-            }
-            // For other subdomains, try: api{subdomain}.{domain}
-            // e.g., app.lyarinet.com -> apiapp.lyarinet.com
-            return `https://api${subdomain}.${domain}`;
+        // Generic pattern: Try api{subdomain}.{domain} first (most common pattern)
+        // e.g., bk.lyarinet.com -> apibk.lyarinet.com
+        // e.g., app.example.com -> apiapp.example.com
+        // e.g., test.example.com -> apitest.example.com
+        if (subdomain !== 'api') {
+            return `${protocol}//api${subdomain}.${domain}`;
         }
         
-        // Generic pattern: Try api.{domain} first (most common)
-        // e.g., app.example.com -> api.example.com
-        if (subdomain !== 'api') {
-            return `${protocol}//api.${domain}`;
-        }
+        // If subdomain is already 'api', try api.{domain}
+        // e.g., api.example.com -> api.example.com (same)
+        return `${protocol}//api.${domain}`;
     }
     
     // Fallback: Use same origin (API might be on same domain)
@@ -65,12 +69,18 @@ function detectDefaultApiUrl(): string {
 }
 
 // Default API URL to use if none is configured
-// For web: empty string (uses relative URLs - works automatically)
+// For web: detect from domain but allow relative URLs (empty string) to work
 // For mobile: detect from current location or use smart detection
 const FALLBACK_API_URL = (() => {
-    // If we're in a native app, try to detect the API URL
+    if (typeof window === 'undefined' || !window.location) {
+        return '';
+    }
+    
+    // Always try to detect the API URL from current domain (works for both web and mobile)
+    const detected = detectDefaultApiUrl();
+    
+    // If we're in a native app, use the detected URL or fallback
     if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-        const detected = detectDefaultApiUrl();
         if (detected) {
             return detected;
         }
@@ -82,10 +92,11 @@ const FALLBACK_API_URL = (() => {
         return 'https://apibk.lyarinet.com';
     }
     
-    // For web: always use empty string (relative URLs work automatically)
-    // This allows the app to work without any API configuration on web
+    // For web: return detected URL if available, but empty string is also valid (uses relative URLs)
+    // The detected URL will be shown in Settings for user convenience
+    // But empty string allows the app to work with relative URLs automatically
     // Vite proxy handles it in dev, same origin in production
-    return '';
+    return detected || '';
 })();
 
 // Cache for synchronous access

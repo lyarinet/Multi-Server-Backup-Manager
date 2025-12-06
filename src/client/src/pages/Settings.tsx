@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { LocalDirectoryBrowser } from '../components/LocalDirectoryBrowser';
-import { getApiBaseUrl, setApiBaseUrl, buildApiUrl } from '../config/api';
+import { getApiBaseUrl, setApiBaseUrl, buildApiUrl, detectDefaultApiUrl } from '../config/api';
 import {
     Settings as SettingsIcon,
     Folder,
@@ -77,6 +77,7 @@ export default function SettingsPage() {
     const [apiBaseUrl, setApiBaseUrlState] = useState('');
     const [apiUrlLoading, setApiUrlLoading] = useState(false);
     const [apiUrlSaving, setApiUrlSaving] = useState(false);
+    const [detectedApiUrl, setDetectedApiUrl] = useState('');
 
     // Collapsible sections state
     const [expandedSections, setExpandedSections] = useState({
@@ -292,9 +293,27 @@ export default function SettingsPage() {
         const loadApiUrl = async () => {
             setApiUrlLoading(true);
             try {
+                // Always detect the API URL from current domain for display (as suggestion)
+                const detected = detectDefaultApiUrl();
+                setDetectedApiUrl(detected);
+                
                 // First try to get from localStorage (will be synced from database by loadData)
+                // Database value takes priority - loadData() will update it from database
                 const url = await getApiBaseUrl();
-                setApiBaseUrlState(url);
+                
+                // Only auto-populate with detected URL if no URL is configured
+                // Database value (loaded by loadData) takes priority
+                if (!url || url === '') {
+                    if (detected) {
+                        // Auto-populate with detected URL as suggestion (user can save it)
+                        setApiBaseUrlState(detected);
+                    } else {
+                        setApiBaseUrlState('');
+                    }
+                } else {
+                    // Use the configured URL (from database or localStorage)
+                    setApiBaseUrlState(url);
+                }
             } catch (e) {
                 console.error('Failed to load API URL:', e);
             } finally {
@@ -451,11 +470,20 @@ export default function SettingsPage() {
                                         className="w-full h-10 px-3 rounded-[var(--radius)] border border-input bg-background focus:ring-2 focus:ring-ring focus:border-input transition-all font-mono text-sm"
                                         value={apiBaseUrl}
                                         onChange={(e) => setApiBaseUrlState(e.target.value)}
-                                        placeholder="https://your-server.com:3010 or http://192.168.1.100:3010"
+                                        placeholder={detectedApiUrl || "https://your-server.com:3010 or http://192.168.1.100:3010"}
                                         disabled={apiUrlLoading}
                                     />
+                                    {detectedApiUrl && (
+                                        <p className="text-xs text-primary mt-1 flex items-center gap-1">
+                                            <span>✓</span>
+                                            <span>Auto-detected from current domain: <strong>{detectedApiUrl}</strong></span>
+                                        </p>
+                                    )}
                                     <p className="text-xs text-muted-foreground mt-2">
-                                        Leave empty to use relative URLs (works with Vite proxy in development).
+                                        {detectedApiUrl 
+                                            ? "The API URL has been auto-detected from your current domain. You can modify it if needed."
+                                            : "Leave empty to use relative URLs (works with Vite proxy in development)."
+                                        }
                                         <br />
                                         For mobile apps, enter the full URL including protocol (http:// or https://) and port.
                                     </p>
