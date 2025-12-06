@@ -88,6 +88,30 @@ function App() {
         checkLoginIpWhitelist();
     }, [token]);
 
+    // Listen for API URL cleared event and refresh
+    useEffect(() => {
+        let lastRefreshTime = 0;
+        const REFRESH_DEBOUNCE_MS = 2000; // Only refresh once per 2 seconds
+        
+        const handleApiUrlCleared = () => {
+            const now = Date.now();
+            // Debounce: prevent rapid repeated refreshes
+            if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
+                return;
+            }
+            lastRefreshTime = now;
+            
+            console.log('API URL cleared event received, components will use relative URLs');
+            // Force refresh of IP whitelist check and other API calls
+            if (token) {
+                setRefreshKey((k) => k + 1);
+            }
+        };
+        
+        window.addEventListener('api-url-cleared', handleApiUrlCleared);
+        return () => window.removeEventListener('api-url-cleared', handleApiUrlCleared);
+    }, [token]);
+
     // Check IP whitelist status on mount and when route changes (if logged in)
     useEffect(() => {
         const checkIpWhitelist = async () => {
@@ -138,7 +162,7 @@ function App() {
         };
 
         checkIpWhitelist();
-    }, [token, route]);
+    }, [token, route, refreshKey]);
 
     useEffect(() => {
         const orig = window.fetch;
@@ -146,31 +170,77 @@ function App() {
             const headers = new Headers(init?.headers || {});
             const t = localStorage.getItem('auth_token');
             if (t) headers.set('Authorization', `Bearer ${t}`);
-            const res = await orig(input, { ...(init || {}), headers });
             
-            // Handle 401 (unauthorized)
-            if (res.status === 401) {
-                localStorage.removeItem('auth_token');
-                setToken(null);
-            }
-            
-            // Handle 403 (IP whitelist blocked)
-            if (res.status === 403) {
-                try {
-                    const data = await res.json();
-                    if (data.code === 'IP_WHITELIST') {
-                        setIpWhitelisted(false);
-                    }
-                } catch (e) {
-                    // If response is not JSON, still check if it might be IP whitelist
-                    const text = await res.text();
-                    if (text.includes('IP address is not whitelisted') || text.includes('Access denied')) {
-                        setIpWhitelisted(false);
-                    }
+            // Build URL if it's a relative API path
+            let url = input;
+            if (typeof input === 'string' && input.startsWith('/api')) {
+                const { buildApiUrlSync, getApiBaseUrlSync } = await import('./config/api');
+                
+                // CRITICAL: Check if we should force relative URLs (after clearing bad URL)
+                // Check the base URL - if it's empty, we're using relative URLs
+                const baseUrl = getApiBaseUrlSync();
+                
+                // If baseUrl is empty (meaning we're using relative URLs), use the path directly
+                // This prevents rebuilding the URL with a bad domain
+                if (!baseUrl || baseUrl === '') {
+                    url = input; // Use relative path directly
+                } else {
+                    url = buildApiUrlSync(input);
                 }
             }
             
-            return res;
+            try {
+                const res = await orig(url, { ...(init || {}), headers });
+                
+                // Handle 401 (unauthorized)
+                if (res.status === 401) {
+                    localStorage.removeItem('auth_token');
+                    setToken(null);
+                }
+                
+                // Handle 403 (IP whitelist blocked)
+                if (res.status === 403) {
+                    try {
+                        const data = await res.json();
+                        if (data.code === 'IP_WHITELIST') {
+                            setIpWhitelisted(false);
+                        }
+                    } catch (e) {
+                        // If response is not JSON, still check if it might be IP whitelist
+                        const text = await res.text();
+                        if (text.includes('IP address is not whitelisted') || text.includes('Access denied')) {
+                            setIpWhitelisted(false);
+                        }
+                    }
+                }
+                
+                return res;
+            } catch (error: any) {
+                // If it's a connection error and we're using an absolute URL, try relative URL fallback
+                if (typeof input === 'string' && input.startsWith('/api')) {
+                    const { isConnectionError, clearApiBaseUrlSync, getApiBaseUrlSync } = await import('./config/api');
+                    
+                    if (isConnectionError(error)) {
+                        const currentUrl = getApiBaseUrlSync();
+                        
+                        // Only try fallback if we have a configured API URL (not already using relative)
+                        if (currentUrl && typeof window !== 'undefined' && !(window as any).Capacitor?.isNativePlatform()) {
+                            console.log('API call failed in App.tsx, trying fallback to relative URL for:', input);
+                            
+                            // Clear the bad API URL SYNCHRONOUSLY (critical for immediate effect)
+                            clearApiBaseUrlSync();
+                            
+                            // Retry with relative URL directly using origFetch to bypass interceptor
+                            // This prevents infinite loops and ensures we use the relative path
+                            // Auth headers are already set in the headers object above
+                            return orig(input, { ...(init || {}), headers });
+                        }
+                    }
+                }
+                
+                // Re-throw the original error
+                throw error;
+            }
         };
         return () => { window.fetch = orig; };
     }, []);

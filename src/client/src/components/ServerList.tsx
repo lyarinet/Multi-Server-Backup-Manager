@@ -65,6 +65,27 @@ export function ServerList({ onBackup }: ServerListProps) {
         loadServers();
     }, []);
 
+    // Listen for API URL cleared event and reload servers
+    useEffect(() => {
+        let lastReloadTime = 0;
+        const RELOAD_DEBOUNCE_MS = 2000; // Only reload once per 2 seconds
+        
+        const handleApiUrlCleared = () => {
+            const now = Date.now();
+            // Debounce: prevent rapid repeated reloads
+            if (now - lastReloadTime < RELOAD_DEBOUNCE_MS) {
+                return;
+            }
+            lastReloadTime = now;
+            
+            console.log('API URL cleared, reloading servers with relative URL');
+            loadServers();
+        };
+        
+        window.addEventListener('api-url-cleared', handleApiUrlCleared);
+        return () => window.removeEventListener('api-url-cleared', handleApiUrlCleared);
+    }, []);
+
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this server?')) {
             return;

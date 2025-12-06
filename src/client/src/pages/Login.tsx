@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
-import { buildApiUrl, getApiBaseUrl, setApiBaseUrl } from '../config/api';
+import { buildApiUrl, getApiBaseUrl, setApiBaseUrl, clearApiBaseUrl } from '../config/api';
 import { Settings } from 'lucide-react';
 
 export default function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
@@ -16,9 +16,13 @@ export default function LoginPage({ onLogin }: { onLogin: (token: string) => voi
         const loadApiUrl = async () => {
             const url = await getApiBaseUrl();
             setApiBaseUrlState(url);
-            // If no API URL is set and we're in a native app, show config
-            if (!url && typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
-                setShowApiConfig(true);
+            // Only show config if URL is explicitly empty (not using default)
+            // Default URL will be used automatically, so no need to show config
+            const stored = localStorage.getItem('api_base_url');
+            if (!stored && !url && typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+                // Only show if truly no URL is set (not even default)
+                // But since we have a default now, this should rarely happen
+                setShowApiConfig(false); // Don't force config, use default
             }
         };
         loadApiUrl();
@@ -53,64 +57,131 @@ export default function LoginPage({ onLogin }: { onLogin: (token: string) => voi
         setError('');
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 30000); // Increased timeout for mobile
-        try {
-            // Get current API base URL for error messages
-            const currentApiUrl = await getApiBaseUrl();
-            const apiUrl = await buildApiUrl('/api/auth/login');
-            console.log('Login attempt to:', apiUrl); // Debug log
-            console.log('API Base URL:', currentApiUrl); // Debug log
-            
-            const res = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-                signal: ctrl.signal,
-            });
-            
-            // Check if response is JSON
-            const contentType = res.headers.get('content-type');
-            let data;
-            if (contentType && contentType.includes('application/json')) {
-                try {
-                    data = await res.json();
-                } catch (e) {
+        
+        // Try login with current API URL first
+        const tryLogin = async (useRelativeUrl = false): Promise<boolean> => {
+            try {
+                let apiUrl: string;
+                if (useRelativeUrl) {
+                    // Use relative URL directly
+                    apiUrl = '/api/auth/login';
+                    console.log('Retrying login with relative URL:', apiUrl);
+                } else {
+                    // Use configured API URL
+                    apiUrl = await buildApiUrl('/api/auth/login');
+                    console.log('Login attempt to:', apiUrl);
+                }
+                
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                    signal: ctrl.signal,
+                });
+                
+                // Check if response is JSON
+                const contentType = res.headers.get('content-type');
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        data = await res.json();
+                    } catch (e) {
+                        const text = await res.text();
+                        console.error('Failed to parse JSON response:', text);
+                        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+                    }
+                } else {
                     const text = await res.text();
-                    console.error('Failed to parse JSON response:', text);
-                    setError(`Server error: ${res.status} ${res.statusText}`);
-                    return;
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    if (res.status === 502 || res.status === 503) {
+                        throw new Error(`API server is not running or not accessible (${res.status})`);
+                    } else {
+                        throw new Error(`Server returned non-JSON response (${res.status})`);
+                    }
                 }
-            } else {
-                const text = await res.text();
-                console.error('Non-JSON response:', text.substring(0, 200));
-                if (res.status === 502 || res.status === 503) {
-                    setError(`API server is not running or not accessible.\n\nStatus: ${res.status} ${res.statusText}\nURL: ${apiUrl}\n\nPlease check if the backend server is running on the server.`);
-                } else {
-                    setError(`Server returned non-JSON response.\n\nStatus: ${res.status} ${res.statusText}\nURL: ${apiUrl}`);
+                
+                if (!res.ok || !data.token) {
+                    // Check if it's a login IP whitelist error
+                    if (res.status === 403 && data.code === 'LOGIN_IP_WHITELIST') {
+                        throw new Error('Access denied. Your IP address is not whitelisted for login.');
+                    } else if (res.status === 401) {
+                        throw new Error('Invalid username or password');
+                    } else {
+                        throw new Error(data?.error || `Login failed (${res.status})`);
+                    }
                 }
-                return;
-            }
-            
-            if (!res.ok || !data.token) {
-                // Check if it's a login IP whitelist error
-                if (res.status === 403 && data.code === 'LOGIN_IP_WHITELIST') {
-                    setError('Access denied. Your IP address is not whitelisted for login.');
-                } else if (res.status === 401) {
-                    setError('Invalid username or password');
-                } else {
-                    setError(data?.error || `Login failed (${res.status})`);
-                }
-            } else {
+                
+                // Success!
                 onLogin(data.token);
+                return true;
+            } catch (e: any) {
+                // Re-throw to be handled by caller
+                throw e;
             }
+        };
+        
+        try {
+            // First try with configured API URL
+            await tryLogin(false);
         } catch (e: any) {
-            console.error('Login error:', e);
-            if (e?.name === 'AbortError') {
-                setError('Login timed out. Check your internet connection and API URL.');
-            } else if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
+            console.error('Login error with configured API URL:', e);
+            
+            // Check if it's a network/connection error
+            const isConnectionError = 
+                e?.name === 'AbortError' ||
+                e?.message?.includes('Failed to fetch') ||
+                e?.message?.includes('NetworkError') ||
+                e?.message?.includes('not accessible') ||
+                e?.message?.includes('timeout');
+            
+            // If it's a connection error and we're on web, try with relative URL
+            if (isConnectionError && typeof window !== 'undefined' && !(window as any).Capacitor?.isNativePlatform()) {
                 const currentUrl = await getApiBaseUrl();
-                setError(`Cannot connect to API server.\n\nAPI URL: ${currentUrl || 'Not configured'}\n\nPlease check:\n1. API server is running\n2. Internet connection\n3. API URL is correct`);
+                
+                // Only try fallback if we have a configured API URL (not already using relative)
+                if (currentUrl) {
+                    console.log('API URL failed, trying fallback to relative URL...');
+                    
+                    try {
+                        // Clear the bad API URL
+                        await clearApiBaseUrl();
+                        
+                        // Retry with relative URL
+                        await tryLogin(true);
+                        
+                        // Show success message
+                        setError('⚠️ Configured API URL was not accessible. Using default (relative URL) instead.');
+                        setTimeout(() => setError(''), 5000); // Clear message after 5 seconds
+                        return;
+                    } catch (retryError: any) {
+                        // Even relative URL failed
+                        console.error('Login failed even with relative URL:', retryError);
+                        if (retryError.message?.includes('Invalid username or password') || 
+                            retryError.message?.includes('Access denied')) {
+                            // These are actual login errors, not connection errors
+                            setError(retryError.message);
+                        } else {
+                            setError(`Cannot connect to API server.\n\nTried:\n1. ${currentUrl}\n2. Relative URL (/api/*)\n\nPlease check if the backend server is running.`);
+                        }
+                    }
+                } else {
+                    // Already using relative URL, show the error
+                    if (e?.name === 'AbortError') {
+                        setError('Login timed out. Check your internet connection.');
+                    } else {
+                        setError(`Cannot connect to API server.\n\nPlease check:\n1. API server is running\n2. Internet connection`);
+                    }
+                }
             } else {
-                setError(`Login failed: ${e?.message || 'Unknown error'}`);
+                // Not a connection error or on mobile - show the actual error
+                if (e?.name === 'AbortError') {
+                    setError('Login timed out. Check your internet connection and API URL.');
+                } else if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
+                    const currentUrl = await getApiBaseUrl();
+                    setError(`Cannot connect to API server.\n\nAPI URL: ${currentUrl || 'Not configured'}\n\nPlease check:\n1. API server is running\n2. Internet connection\n3. API URL is correct`);
+                } else {
+                    setError(e?.message || `Login failed: ${e?.message || 'Unknown error'}`);
+                }
             }
         } finally {
             clearTimeout(timer);
