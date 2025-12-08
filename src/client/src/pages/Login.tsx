@@ -71,42 +71,42 @@ export default function LoginPage({ onLogin }: { onLogin: (token: string) => voi
                     apiUrl = await buildApiUrl('/api/auth/login');
                     console.log('Login attempt to:', apiUrl);
                 }
-                
-                const res = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password }),
-                    signal: ctrl.signal,
-                });
-                
-                // Check if response is JSON
-                const contentType = res.headers.get('content-type');
-                let data;
-                if (contentType && contentType.includes('application/json')) {
-                    try {
-                        data = await res.json();
-                    } catch (e) {
-                        const text = await res.text();
-                        console.error('Failed to parse JSON response:', text);
-                        throw new Error(`Server error: ${res.status} ${res.statusText}`);
-                    }
-                } else {
+            
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+                signal: ctrl.signal,
+            });
+            
+            // Check if response is JSON
+            const contentType = res.headers.get('content-type');
+            let data;
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    data = await res.json();
+                } catch (e) {
                     const text = await res.text();
-                    console.error('Non-JSON response:', text.substring(0, 200));
-                    if (res.status === 502 || res.status === 503) {
-                        throw new Error(`API server is not running or not accessible (${res.status})`);
-                    } else {
-                        throw new Error(`Server returned non-JSON response (${res.status})`);
-                    }
+                    console.error('Failed to parse JSON response:', text);
+                        throw new Error(`Server error: ${res.status} ${res.statusText}`);
                 }
-                
-                if (!res.ok || !data.token) {
-                    // Check if it's a login IP whitelist error
-                    if (res.status === 403 && data.code === 'LOGIN_IP_WHITELIST') {
+            } else {
+                const text = await res.text();
+                console.error('Non-JSON response:', text.substring(0, 200));
+                if (res.status === 502 || res.status === 503) {
+                        throw new Error(`API server is not running or not accessible (${res.status})`);
+                } else {
+                        throw new Error(`Server returned non-JSON response (${res.status})`);
+                }
+            }
+            
+            if (!res.ok || !data.token) {
+                // Check if it's a login IP whitelist error
+                if (res.status === 403 && data.code === 'LOGIN_IP_WHITELIST') {
                         throw new Error('Access denied. Your IP address is not whitelisted for login.');
-                    } else if (res.status === 401) {
+                } else if (res.status === 401) {
                         throw new Error('Invalid username or password');
-                    } else {
+                } else {
                         throw new Error(data?.error || `Login failed (${res.status})`);
                     }
                 }
@@ -174,12 +174,12 @@ export default function LoginPage({ onLogin }: { onLogin: (token: string) => voi
                 }
             } else {
                 // Not a connection error or on mobile - show the actual error
-                if (e?.name === 'AbortError') {
-                    setError('Login timed out. Check your internet connection and API URL.');
-                } else if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
-                    const currentUrl = await getApiBaseUrl();
-                    setError(`Cannot connect to API server.\n\nAPI URL: ${currentUrl || 'Not configured'}\n\nPlease check:\n1. API server is running\n2. Internet connection\n3. API URL is correct`);
-                } else {
+            if (e?.name === 'AbortError') {
+                setError('Login timed out. Check your internet connection and API URL.');
+            } else if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
+                const currentUrl = await getApiBaseUrl();
+                setError(`Cannot connect to API server.\n\nAPI URL: ${currentUrl || 'Not configured'}\n\nPlease check:\n1. API server is running\n2. Internet connection\n3. API URL is correct`);
+            } else {
                     setError(e?.message || `Login failed: ${e?.message || 'Unknown error'}`);
                 }
             }

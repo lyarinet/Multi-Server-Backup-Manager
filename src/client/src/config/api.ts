@@ -361,7 +361,7 @@ export function getApiBaseUrlSync(): string {
                 // Remove it again to be safe (might have been set by another component)
                 localStorage.removeItem(API_URL_KEY);
                 cachedApiUrl = '';
-            }
+    }
         } catch (e) {
             // Ignore errors
         }
@@ -532,12 +532,12 @@ export async function initializeApiConfig(): Promise<void> {
         // For mobile, we need to use the configured URL or fallback
         if (isNativePlatform()) {
             // Mobile: try to load from database if logged in
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                const dbUrl = await loadApiUrlFromDatabase();
-                if (dbUrl) {
-                    cachedApiUrl = dbUrl;
-                }
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            const dbUrl = await loadApiUrlFromDatabase();
+            if (dbUrl) {
+                cachedApiUrl = dbUrl;
+            }
             }
         } else {
             // Web: For web, we prefer relative URLs, but if a URL is configured,

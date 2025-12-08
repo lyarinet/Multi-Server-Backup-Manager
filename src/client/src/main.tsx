@@ -27,8 +27,8 @@ window.fetch = async (input: any, init?: any) => {
             url = input; // Use relative path directly
         } else {
             // Only build URL if we have a valid base URL
-            url = buildApiUrlSync(input);
-        }
+        url = buildApiUrlSync(input);
+    }
     }
     
     try {

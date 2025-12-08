@@ -235,6 +235,21 @@ export class GoogleDriveService {
 
         const uploadedFiles: (DriveFile | DriveFolder)[] = [];
         const files = await this.getAllFilesInDirectory(dirPath);
+        if (files.length === 0) {
+            // Upload a small marker file so the folder shows as updated even if empty
+            const markerPath = path.join(dirPath, '.drive-upload-marker.txt');
+            try {
+                await fsp.writeFile(markerPath, `Uploaded on ${new Date().toISOString()}`);
+                const markerUploaded = await this.uploadFile({
+                    filePath: markerPath,
+                    fileName: 'README.txt',
+                    folderId: folderId || undefined,
+                });
+                uploadedFiles.push(markerUploaded);
+            } catch (e) {
+                // ignore marker errors
+            }
+        }
         const totalFiles = files.length;
 
         // Create a folder in Drive for this directory
@@ -250,7 +265,19 @@ export class GoogleDriveService {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const relativePath = path.relative(dirPath, file);
-            const fileName = relativePath.replace(/\\/g, '/'); // Normalize path separators
+            const relativeDir = path.dirname(relativePath);
+            let parentIdForFile = driveFolder.id;
+            if (relativeDir && relativeDir !== '.' && relativeDir !== '') {
+                const segments = relativeDir.split(path.sep).filter(Boolean);
+                for (const seg of segments) {
+                    const subFolder = await this.findOrCreateFolder({
+                        name: seg,
+                        parentId: parentIdForFile,
+                    });
+                    parentIdForFile = subFolder.id;
+                }
+            }
+            const fileName = path.basename(relativePath);
 
             if (onProgress) {
                 onProgress(i + 1, totalFiles, fileName);
@@ -260,7 +287,7 @@ export class GoogleDriveService {
                 const uploaded = await this.uploadFile({
                     filePath: file,
                     fileName,
-                    folderId: driveFolder.id,
+                    folderId: parentIdForFile,
                 });
                 uploadedFiles.push(uploaded);
             } catch (error: any) {
@@ -714,5 +741,3 @@ function formatBytes(bytes: number): string {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
-
-

@@ -3,8 +3,9 @@ import fs from 'fs';
 import { exec } from 'child_process';
 import path from 'path';
 import { db } from './db';
-import { backupLogs } from './db/schema';
+import { backupLogs, settings } from './db/schema';
 import { eq } from 'drizzle-orm';
+import { GoogleDriveService } from './drive';
 
 interface BackupConfig {
     host: string;
@@ -294,6 +295,52 @@ export class BackupManager {
             await this.executeRemote(`rm -rf ${remoteTmpDir}`);
             await this.log('Backup completed successfully.');
             await db.update(backupLogs).set({ status: 'success' }).where(eq(backupLogs.id, this.logId));
+
+            // Auto-upload to Google Drive if enabled in settings
+            try {
+                const set = await db.select().from(settings).limit(1);
+                const cfg = set[0] as any;
+
+                if (cfg?.driveAutoUpload) {
+                    if (!cfg?.driveClientId || !cfg?.driveClientSecret || !cfg?.driveRefreshToken) {
+                        await this.log('Drive auto-upload enabled but configuration is incomplete. Skipping upload.');
+                    } else {
+                        await this.log('Starting Google Drive auto-upload for backup directory...');
+                        const driveService = new GoogleDriveService({
+                            clientId: cfg.driveClientId,
+                            clientSecret: cfg.driveClientSecret,
+                            refreshToken: (cfg.driveRefreshToken || '').trim(),
+                        });
+
+                        const targetFolderId = cfg.driveFolderId || undefined;
+                        await this.log(`Drive target folder: ${targetFolderId || 'root'}`);
+                        const yearFolderName = `ServerBackups_${new Date().getFullYear()}`;
+                        const yearFolder = await driveService.findOrCreateFolder({
+                            name: yearFolderName,
+                            parentId: targetFolderId,
+                        });
+                        await this.log(`Using yearly Drive folder: ${yearFolder.name} (${yearFolder.id})`);
+                        try {
+                            const entries = await fs.promises.readdir(localBackupDir);
+                            await this.log(`Found ${entries.length} top-level entries to upload from ${localBackupDir}`);
+                        } catch (scanErr: any) {
+                            await this.log(`Failed to scan local backup directory before upload: ${scanErr.message}`);
+                        }
+                        const uploaded = await driveService.uploadDirectory({
+                            dirPath: localBackupDir,
+                            folderId: yearFolder.id,
+                            onProgress: async (current, total, fileName) => {
+                                await this.log(`Drive upload ${current}/${total}: ${fileName}`);
+                            },
+                        });
+                        await this.log(`Google Drive auto-upload completed successfully. Uploaded items: ${uploaded.length}`);
+                    }
+                } else {
+                    await this.log('Drive auto-upload is disabled. Skipping upload.');
+                }
+            } catch (e: any) {
+                await this.log(`Google Drive auto-upload failed: ${e.message}`);
+            }
         } catch (error: any) {
             await this.log(`Backup failed: ${error.message}`);
             await db.update(backupLogs).set({ status: 'failed' }).where(eq(backupLogs.id, this.logId));
@@ -301,4 +348,3 @@ export class BackupManager {
         }
     }
 }
-

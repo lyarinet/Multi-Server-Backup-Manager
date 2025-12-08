@@ -319,7 +319,7 @@ export default function SettingsPage() {
                     }
                 } else {
                     // Use the configured URL (from database or localStorage)
-                    setApiBaseUrlState(url);
+                setApiBaseUrlState(url);
                 }
             } catch (e) {
                 console.error('Failed to load API URL:', e);

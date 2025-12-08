@@ -191,30 +191,30 @@ function App() {
             
             try {
                 const res = await orig(url, { ...(init || {}), headers });
-                
-                // Handle 401 (unauthorized)
-                if (res.status === 401) {
-                    localStorage.removeItem('auth_token');
-                    setToken(null);
-                }
-                
-                // Handle 403 (IP whitelist blocked)
-                if (res.status === 403) {
-                    try {
-                        const data = await res.json();
-                        if (data.code === 'IP_WHITELIST') {
-                            setIpWhitelisted(false);
-                        }
-                    } catch (e) {
-                        // If response is not JSON, still check if it might be IP whitelist
-                        const text = await res.text();
-                        if (text.includes('IP address is not whitelisted') || text.includes('Access denied')) {
-                            setIpWhitelisted(false);
-                        }
+            
+            // Handle 401 (unauthorized)
+            if (res.status === 401) {
+                localStorage.removeItem('auth_token');
+                setToken(null);
+            }
+            
+            // Handle 403 (IP whitelist blocked)
+            if (res.status === 403) {
+                try {
+                    const data = await res.json();
+                    if (data.code === 'IP_WHITELIST') {
+                        setIpWhitelisted(false);
+                    }
+                } catch (e) {
+                    // If response is not JSON, still check if it might be IP whitelist
+                    const text = await res.text();
+                    if (text.includes('IP address is not whitelisted') || text.includes('Access denied')) {
+                        setIpWhitelisted(false);
                     }
                 }
-                
-                return res;
+            }
+            
+            return res;
             } catch (error: any) {
                 // If it's a connection error and we're using an absolute URL, try relative URL fallback
                 if (typeof input === 'string' && input.startsWith('/api')) {
