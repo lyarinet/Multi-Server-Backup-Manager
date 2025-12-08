@@ -1,6 +1,5 @@
 import { db } from './db';
 import { ipWhitelist, loginIpWhitelist, settings } from './db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * Check if an IP address matches a CIDR range

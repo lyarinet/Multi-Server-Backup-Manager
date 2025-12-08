@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow HTTPS connections to any domain -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Allow cleartext (HTTP) for localhost during development -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    
+    <!-- Allow HTTPS to your API domain -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">apibk.lyarinet.com</domain>
+        <domain includeSubdomains="true">bk.lyarinet.com</domain>
+    </domain-config>
+</network-security-config>
+

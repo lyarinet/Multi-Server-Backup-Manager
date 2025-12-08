@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Multi-Server Backup Manager</string>
+    <string name="title_activity_main">Multi-Server Backup Manager</string>
+    <string name="package_name">com.serverbackup.manager</string>
+    <string name="custom_url_scheme">com.serverbackup.manager</string>
+</resources>

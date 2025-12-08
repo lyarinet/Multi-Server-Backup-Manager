@@ -499,6 +499,295 @@ You can also manage autostart from the Settings page in the web interface.
 - `POST /api/autostart/enable` - Enable autostart on boot
 - `POST /api/autostart/disable` - Disable autostart on boot
 
+## Mobile App Build (Android & iOS)
+
+This application can be built as a native mobile app using Capacitor for both Android and iOS platforms.
+
+### Prerequisites
+
+**For Android:**
+- Android Studio installed
+- Java Development Kit (JDK) 11 or higher
+- Android SDK (installed via Android Studio)
+
+**For iOS (macOS only):**
+- Xcode installed
+- CocoaPods (`sudo gem install cocoapods`)
+- iOS SDK (installed via Xcode)
+
+### Building Android APK
+
+1. **Configure Android Studio Path (macOS):**
+
+   **Option 1: Use the setup script (Recommended):**
+   ```bash
+   ./setup-android-studio-macos.sh
+   ```
+   This script will automatically detect Android Studio and configure the path.
+
+   **Option 2: Manual configuration:**
+   
+   On macOS, Android Studio is typically located at:
+   ```bash
+   /Applications/Android Studio.app/Contents/MacOS/studio
+   ```
+
+   Set the environment variable:
+   ```bash
+   export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"
+   ```
+
+   Or add to your `~/.zshrc` or `~/.bash_profile`:
+   ```bash
+   echo 'export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+2. **Build and Sync:**
+   ```bash
+   npm run android:build
+   ```
+
+3. **Open in Android Studio:**
+   ```bash
+   npm run android:open
+   ```
+
+4. **Build APK in Android Studio:**
+   - In Android Studio: `Build` → `Build Bundle(s) / APK(s)` → `Build APK(s)`
+   - APK will be in: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+### Building iOS IPA (macOS only)
+
+1. **Install CocoaPods (if not installed):**
+   ```bash
+   sudo gem install cocoapods
+   ```
+
+2. **Build and Sync:**
+   ```bash
+   npm run ios:build
+   ```
+
+3. **Open in Xcode:**
+   ```bash
+   npm run ios:open
+   ```
+
+4. **Build in Xcode:**
+   - Select your device or simulator
+   - Click `Product` → `Archive`
+   - Follow the prompts to create an IPA
+
+### App Icons
+
+The application includes automatic icon generation for both Android and iOS platforms.
+
+#### Generating App Icons
+
+Icons are automatically generated from a single source image:
+
+```bash
+# Generate all platform icons from assets/icon.png
+npm run icons:generate
+```
+
+This command will:
+- Generate Android icons for all densities (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)
+- Generate iOS app icons
+- Create splash screens for both platforms
+- Generate round icons for Android
+
+#### Creating Your Custom Icon
+
+**Option 1: Auto-Generate Icon**
+If you don't have an icon yet, the script will automatically generate one:
+
+```bash
+# This will create a default icon if none exists
+npm run icons:generate
+```
+
+**Option 2: Use Your Own Icon**
+1. Create a 1024x1024 PNG image
+2. Save it as `assets/icon.png`
+3. Run `npm run icons:generate`
+
+**Option 3: Use Online Tools**
+- [AppIcon.co](https://www.appicon.co/) - Upload and generate icons
+- [Favicon Generator](https://www.favicon-generator.org/) - Create icons from images
+- [Icon Kitchen](https://icon.kitchen/) - Design and export icons
+
+**Icon Requirements:**
+- Size: 1024x1024 pixels
+- Format: PNG with transparency (recommended)
+- Theme: Server/backup/cloud storage related
+- Colors: Use app theme colors (#0ea5e9 for primary)
+
+#### Icon Files Location
+
+After generation, icons are located at:
+- **Source**: `assets/icon.png` (1024x1024)
+- **Android**: `android/app/src/main/res/mipmap-*/`
+- **iOS**: `ios/App/App/Assets.xcassets/AppIcon.appiconset/`
+
+#### Customizing Icons
+
+To customize the icon:
+1. Edit or replace `assets/icon.png` with your 1024x1024 image
+2. Run `npm run icons:generate` to regenerate all sizes
+3. Rebuild the app: `npm run android:build-apk`
+
+**Note**: The icon generator uses `@capacitor/assets` which automatically creates all required sizes and formats for both platforms.
+
+### API Configuration for Mobile Apps
+
+Before using the mobile app, configure the API base URL:
+
+1. Open the app
+2. On first launch, you'll see "Configure API URL" option on the login screen
+3. Enter your API base URL (e.g., `https://apibk.lyarinet.com`)
+4. Save the configuration
+5. Login with your credentials
+
+Alternatively, you can configure it from Settings after login:
+1. Go to Settings
+2. Find "API Configuration" section
+3. Enter your API base URL
+4. Save the configuration
+
+**Important:** The API base URL should:
+- ✅ Include protocol: `https://` or `http://`
+- ✅ Include domain: `apibk.lyarinet.com`
+- ❌ No trailing slash: `https://apibk.lyarinet.com` (not `/`)
+- ❌ No path: `https://apibk.lyarinet.com` (not `/api`)
+
+### Building APK Without Android Studio GUI
+
+If you're on a Linux server or don't have Android Studio GUI installed, you can build the APK directly using Gradle:
+
+```bash
+# Build debug APK (no signing required)
+npm run android:build-apk
+
+# Build release APK (requires signing configuration)
+npm run android:build-apk-release
+```
+
+The APK will be located at:
+- Debug: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Release: `android/app/build/outputs/apk/release/app-release.apk`
+
+**Note:** `npm run android:open` only works on macOS/Windows/Linux desktop with Android Studio GUI installed. On servers, use the build commands above.
+
+### Troubleshooting
+
+**Android Studio not found (macOS):**
+```bash
+# Check if Android Studio is installed
+ls -la "/Applications/Android Studio.app/Contents/MacOS/studio"
+
+# If found, set the path
+export CAPACITOR_ANDROID_STUDIO_PATH="/Applications/Android Studio.app/Contents/MacOS/studio"
+
+# If not found, install Android Studio from:
+# https://developer.android.com/studio
+```
+
+**Building on Linux Server (No GUI):**
+```bash
+# 1. Install Java JDK (required for Gradle)
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+
+# 2. Set JAVA_HOME (optional, script will auto-detect)
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# 3. Install Android SDK Command-Line Tools
+# Download from: https://developer.android.com/studio#command-tools
+# Or install via package manager:
+mkdir -p ~/Android/Sdk
+cd ~/Android/Sdk
+wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip commandlinetools-linux-*_latest.zip
+mkdir -p cmdline-tools/latest
+mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+rm commandlinetools-linux-*_latest.zip
+
+# 4. Set ANDROID_HOME
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# 5. Accept licenses and install required SDK components
+yes | sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+# 6. Create local.properties file (or let start.sh do it)
+echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+# 7. Build APK
+npm run android:build-apk
+```
+
+**Java Not Found Error:**
+```bash
+# Install Java JDK
+sudo apt install -y openjdk-17-jdk
+
+# Verify installation
+java -version
+
+# Set JAVA_HOME permanently (add to ~/.bashrc or ~/.zshrc)
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Android SDK Not Found Error:**
+```bash
+# Error: SDK location not found. Define a valid SDK location...
+
+# Solution 1: Install Android SDK Command-Line Tools
+mkdir -p ~/Android/Sdk
+cd ~/Android/Sdk
+wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip commandlinetools-linux-*_latest.zip
+mkdir -p cmdline-tools/latest
+mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+
+# Set environment variables
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# Accept licenses and install SDK components
+yes | sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+# Create local.properties
+echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+# Solution 2: Manual configuration
+# If SDK is installed elsewhere, create android/local.properties:
+echo "sdk.dir=/path/to/your/android/sdk" > android/local.properties
+```
+
+**CORS Errors:**
+- Ensure the backend server has CORS configured (already included in the code)
+- Check that the API base URL is correct
+- Verify the backend server is running
+
+**Build Errors:**
+- Make sure all dependencies are installed: `npm install`
+- Clean and rebuild: `npm run build:client && npm run android:build`
+- For Gradle errors, check `android/app/build.gradle` configuration
+- Ensure Java JDK is installed: `java -version`
+
+**Icon Not Showing:**
+- Regenerate icons: `npm run icons:generate`
+- Ensure `assets/icon.png` exists (1024x1024 PNG)
+- Rebuild the app after regenerating icons: `npm run android:build-apk`
+- Clear app cache and reinstall on device
+- Check that icons were generated in `android/app/src/main/res/mipmap-*/`
+
 ## License
 
 This project is licensed under the **ISC License** - a simple, permissive open source license similar to MIT.

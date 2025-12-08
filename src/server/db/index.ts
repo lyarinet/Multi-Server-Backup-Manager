@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 
-let sqlite: Database;
+let sqlite: InstanceType<typeof Database>;
 try {
     sqlite = new Database('sqlite.db', { 
         timeout: 5000, // 5 second timeout for database operations

@@ -9,8 +9,19 @@ WorkingDirectory=WORKING_DIR_PLACEHOLDER
 Environment="NODE_ENV=production"
 Environment="PORT=PORT_PLACEHOLDER"
 ExecStart=NODE_PATH_PLACEHOLDER WORKING_DIR_PLACEHOLDER/dist/server/index.js
+# Auto-restart configuration
 Restart=always
 RestartSec=10
+# Prevent restart loops (max 5 restarts in 10 minutes)
+StartLimitIntervalSec=600
+StartLimitBurst=5
+# Timeout settings
+TimeoutStartSec=60
+TimeoutStopSec=30
+# Graceful shutdown
+KillMode=mixed
+KillSignal=SIGTERM
+# Logging
 StandardOutput=journal
 StandardError=journal
 

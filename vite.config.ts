@@ -10,6 +10,9 @@ export default defineConfig({
         outDir: '../../dist/client',
         emptyOutDir: true,
     },
+    optimizeDeps: {
+        exclude: ['@capacitor/core', '@capacitor/preferences', '@capacitor/network'],
+    },
     resolve: {
         alias: {
             '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), './src/client/src'),

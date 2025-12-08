@@ -27,12 +27,25 @@ export function DownloadPage() {
         try {
             const res = await fetch(`/api/backups/list?path=${encodeURIComponent(path)}`);
             if (res.ok) {
-                const data = await res.json();
-                setFiles(data.files);
-                setCurrentPath(data.currentPath);
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const data = await res.json();
+                        setFiles(data.files);
+                        setCurrentPath(data.currentPath);
+                    } catch (e: any) {
+                        // Silently ignore JSON parse errors
+                        console.warn('Failed to parse files response');
+                    }
+                } else {
+                    console.warn('Files endpoint returned non-JSON response');
+                }
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            // Only log if it's not a network error
+            if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
+                console.error(error);
+            }
         } finally {
             setLoading(false);
         }
@@ -44,11 +57,24 @@ export function DownloadPage() {
             try {
                 const res = await fetch('/api/settings');
                 if (res.ok) {
-                    const data = await res.json();
-                    setBasePath(data.globalLocalBackupPath || '~/Server-Backups');
+                    const contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        try {
+                            const data = await res.json();
+                            setBasePath(data.globalLocalBackupPath || '~/Server-Backups');
+                        } catch (e: any) {
+                            // Silently ignore JSON parse errors
+                            setBasePath('~/Server-Backups');
+                        }
+                    } else {
+                        setBasePath('~/Server-Backups');
+                    }
                 }
-            } catch (error) {
-                console.error(error);
+            } catch (error: any) {
+                // Only log if it's not a network error
+                if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
+                    console.error(error);
+                }
                 setBasePath('~/Server-Backups');
             }
         };

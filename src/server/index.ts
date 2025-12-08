@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import cors from 'cors';
 import { db } from './db';
 import { servers, backupLogs, users, sessions, cronJobs, ipWhitelist, loginIpWhitelist } from './db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,6 +11,37 @@ import { isIpWhitelisted, isLoginIpWhitelisted, getClientIp, validateIpOrCidr } 
 const app = express();
 const defaultPort = Number(process.env.PORT) || 3000;
 let port = defaultPort;
+
+// CORS configuration - allow requests from frontend domain and mobile apps
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, etc.)
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        const allowedOrigins = [
+            'https://bk.lyarinet.com',
+            'http://localhost:5173', // Vite dev server
+            'http://localhost:3000',
+            'capacitor://localhost', // Capacitor iOS
+            'http://localhost', // Capacitor Android
+            'https://localhost', // Capacitor Android HTTPS
+        ];
+        
+        // Allow if origin is in allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            // For mobile apps, allow all origins (they use absolute URLs)
+            // This is safe because mobile apps are installed and not accessible via browser
+            callback(null, true);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 app.use(express.json());
 app.set('trust proxy', true);
@@ -256,7 +288,7 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
 });
 
 // API Routes
-app.get('/api/servers', authMiddleware, async (req, res) => {
+app.get('/api/servers', authMiddleware, async (_req, res) => {
     const allServers = await db.select().from(servers);
     const normalized = allServers.map((s: any) => ({
         ...s,
@@ -939,10 +971,23 @@ app.get('/oauth_callback', async (req, res) => {
     }
 });
 
+// Root path handler - return API info
+app.get('/', (_req, res) => {
+    res.json({
+        message: 'Multi-Server Backup Manager API',
+        version: '1.0.0',
+        endpoints: {
+            health: '/health',
+            api: '/api/*',
+            docs: 'See README.md for API documentation'
+        }
+    });
+});
+
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client')));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
         res.sendFile(path.join(__dirname, '../client/index.html'));
     });
 }
@@ -1029,7 +1074,7 @@ startHttpServer(port);
         console.error('Failed to start HTTPS server:', (e as any)?.message || e);
     }
 })();
-app.get('/api/settings', authMiddleware, async (req, res) => {
+app.get('/api/settings', authMiddleware, async (_req, res) => {
     try {
         const rows = await db.select().from(settings).limit(1);
         res.json(rows[0] || {});
@@ -1042,6 +1087,7 @@ app.get('/api/settings', authMiddleware, async (req, res) => {
 app.put('/api/settings', authMiddleware, async (req, res) => {
     const schema = z.object({
         globalLocalBackupPath: z.string().optional(),
+        apiBaseUrl: z.string().optional(),
         driveClientId: z.string().optional(),
         driveClientSecret: z.string().optional(),
         driveRefreshToken: z.string().optional(),
@@ -1173,7 +1219,7 @@ app.get('/api/drive/redirect-uri', authMiddleware, (req, res) => {
 });
 
 // Test Drive connection
-app.get('/api/drive/test', authMiddleware, async (req, res) => {
+app.get('/api/drive/test', authMiddleware, async (_req, res) => {
     try {
         // Check if Drive is configured first
         const set = await db.select().from(settings).limit(1);
@@ -1238,7 +1284,7 @@ app.get('/api/drive/folders', authMiddleware, async (req, res) => {
 });
 
 // Get root folder
-app.get('/api/drive/root', authMiddleware, async (req, res) => {
+app.get('/api/drive/root', authMiddleware, async (_req, res) => {
     try {
         const driveService = await getDriveService()();
         const root = await driveService.getRootFolder();
@@ -1493,7 +1539,7 @@ app.get('/api/backups/download', async (req, res) => {
     });
 });
 // Cron Jobs API
-app.get('/api/cron-jobs', authMiddleware, async (req, res) => {
+app.get('/api/cron-jobs', authMiddleware, async (_req, res) => {
     try {
         const jobs = await db.select().from(cronJobs).all();
         // Join with servers to get server names
@@ -1686,7 +1732,7 @@ app.delete('/api/cron-jobs/:id', authMiddleware, async (req, res) => {
 });
 
 // IP Whitelist Management API
-app.get('/api/ip-whitelist/status', authMiddleware, async (req, res) => {
+app.get('/api/ip-whitelist/status', authMiddleware, async (_req, res) => {
     try {
         const settingsRows = await db.select().from(settings).limit(1);
         const config = settingsRows[0] as any;
@@ -1717,7 +1763,7 @@ app.get('/api/ip-whitelist/current-ip', authMiddleware, (req, res) => {
     }
 });
 
-app.get('/api/ip-whitelist', authMiddleware, async (req, res) => {
+app.get('/api/ip-whitelist', authMiddleware, async (_req, res) => {
     try {
         const entries = await db.select().from(ipWhitelist).orderBy(ipWhitelist.createdAt).all();
         res.json(entries);
@@ -1823,7 +1869,7 @@ app.get('/api/login-ip-whitelist/check', async (req, res) => {
     }
 });
 
-app.get('/api/login-ip-whitelist/status', authMiddleware, async (req, res) => {
+app.get('/api/login-ip-whitelist/status', authMiddleware, async (_req, res) => {
     try {
         const settingsRows = await db.select().from(settings).limit(1);
         const config = settingsRows[0] as any;
@@ -1845,7 +1891,7 @@ app.get('/api/login-ip-whitelist/current-ip', authMiddleware, (req, res) => {
     }
 });
 
-app.get('/api/login-ip-whitelist', authMiddleware, async (req, res) => {
+app.get('/api/login-ip-whitelist', authMiddleware, async (_req, res) => {
     try {
         const entries = await db.select().from(loginIpWhitelist).orderBy(loginIpWhitelist.createdAt).all();
         res.json(entries);
@@ -1934,7 +1980,7 @@ app.put('/api/login-ip-whitelist/enable', authMiddleware, async (req, res) => {
 });
 
 // Autostart Management
-app.get('/api/autostart/status', authMiddleware, async (req, res) => {
+app.get('/api/autostart/status', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -1979,7 +2025,7 @@ app.get('/api/autostart/status', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/install', authMiddleware, async (req, res) => {
+app.post('/api/autostart/install', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2011,7 +2057,7 @@ app.post('/api/autostart/install', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/enable', authMiddleware, async (req, res) => {
+app.post('/api/autostart/enable', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2048,7 +2094,7 @@ app.post('/api/autostart/enable', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/autostart/disable', authMiddleware, async (req, res) => {
+app.post('/api/autostart/disable', authMiddleware, async (_req, res) => {
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -2085,7 +2131,7 @@ app.post('/api/autostart/disable', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
     try {
         // Test database connection
         await db.select().from(users).limit(1);

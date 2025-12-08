@@ -68,7 +68,7 @@ class CronScheduler {
     /**
      * Calculate next run time from cron expression
      */
-    private calculateNextRun(cronExpr: string): Date {
+    private calculateNextRun(_cronExpr: string): Date {
         // Simple calculation: get next occurrence
         // For more accurate calculation, we could use a library like 'cron-parser'
         const now = new Date();
@@ -240,7 +240,7 @@ class CronScheduler {
      * Stop all jobs
      */
     stopAll() {
-        for (const [jobId, jobTask] of this.jobs) {
+        for (const [_jobId, jobTask] of this.jobs) {
             jobTask.task.stop();
         }
         this.jobs.clear();
