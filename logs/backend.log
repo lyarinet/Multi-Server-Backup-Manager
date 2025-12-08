@@ -13,37 +13,26 @@ Server running at http://localhost:3010
 [Cron] Stopped all jobs
 [Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
 [Cron] Loaded 1 cron job(s)
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `tsx src/server/index.ts`[39m
-Database connection established
-Server running at http://localhost:3010
-[Cron] Loading cron jobs from database...
-[Cron] Stopped all jobs
-[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
-[Cron] Loaded 1 cron job(s)
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `tsx src/server/index.ts`[39m
-Database connection established
-Server running at http://localhost:3010
-[Cron] Loading cron jobs from database...
-[Cron] Stopped all jobs
-[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
-[Cron] Loaded 1 cron job(s)
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `tsx src/server/index.ts`[39m
-Database connection established
-Server running at http://localhost:3010
-[Cron] Loading cron jobs from database...
-[Cron] Stopped all jobs
-[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
-[Cron] Loaded 1 cron job(s)
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `tsx src/server/index.ts`[39m
-Database connection established
-Server running at http://localhost:3010
-[Cron] Loading cron jobs from database...
-[Cron] Stopped all jobs
-[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 0 2 * * *
-[Cron] Loaded 1 cron job(s)
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+Saving settings: {
+  hasGlobalPath: false,
+  hasDriveClientId: true,
+  hasDriveClientSecret: true,
+  hasDriveRefreshToken: true,
+  refreshTokenLength: 27,
+  hasDriveFolderId: false,
+  driveAutoUpload: true
+}
+Settings updated successfully
+Drive test - Config check: {
+  hasClientId: true,
+  hasClientSecret: true,
+  hasRefreshToken: true,
+  refreshTokenLength: 27
+}
+Initializing Drive service with refresh token length: 27
+Drive authentication error: invalid_client undefined
+Drive testConnection error: Drive authentication failed: invalid_client undefined
+Drive test error: Drive connection test failed: Drive authentication failed: invalid_client Error: Drive connection test failed: Drive authentication failed: invalid_client
+    at GoogleDriveService.testConnection (/var/www/html/backup/bk/src/server/drive.ts:705:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (/var/www/html/backup/bk/src/server/index.ts:1247:29)

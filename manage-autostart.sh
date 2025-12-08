@@ -93,10 +93,16 @@ function install_service() {
     echo "✓ Service installed successfully!"
     echo "  Service file: $SERVICE_FILE"
     echo ""
+    echo "Auto-restart Configuration:"
+    echo "  ✓ Auto-restart enabled (Restart=always)"
+    echo "  ✓ Restart delay: 10 seconds"
+    echo "  ✓ Restart protection: Max 5 restarts in 10 minutes"
+    echo ""
     echo "Next steps:"
     echo "  To enable autostart: sudo systemctl enable $SERVICE_NAME"
     echo "  To start the service: sudo systemctl start $SERVICE_NAME"
     echo "  To check status: sudo systemctl status $SERVICE_NAME"
+    echo "  To view logs: sudo journalctl -u $SERVICE_NAME -f"
 }
 
 function uninstall_service() {
@@ -169,6 +175,21 @@ function status_service() {
         echo "  Autostart: ✓ Enabled"
     else
         echo "  Autostart: ✗ Disabled"
+    fi
+    
+    # Show restart policy
+    RESTART_POLICY=$(grep "^Restart=" "$SERVICE_FILE" | cut -d'=' -f2)
+    RESTART_SEC=$(grep "^RestartSec=" "$SERVICE_FILE" | cut -d'=' -f2)
+    if [ -n "$RESTART_POLICY" ]; then
+        echo "  Auto-restart: ✓ Enabled ($RESTART_POLICY, delay: ${RESTART_SEC}s)"
+    fi
+    
+    # Show restart count if service is running
+    if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+        RESTART_COUNT=$(systemctl show "$SERVICE_NAME" -p NRestarts --value 2>/dev/null || echo "0")
+        if [ -n "$RESTART_COUNT" ] && [ "$RESTART_COUNT" != "0" ]; then
+            echo "  Restart Count: $RESTART_COUNT"
+        fi
     fi
     
     # Show service file info
