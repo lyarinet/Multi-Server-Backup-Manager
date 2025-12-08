@@ -258,6 +258,22 @@ else
     BACKEND_PID=$!
     echo $BACKEND_PID > logs/backend.pid
     echo "✅ Backend started in background (PID: $BACKEND_PID)"
+    echo "⏳ Waiting for backend to be ready..."
+    READY=0
+    for i in $(seq 1 30); do
+      if command -v curl >/dev/null 2>&1; then
+        RES=$(curl -s "http://127.0.0.1:${BACKEND_PORT:-3010}/health" || true)
+      else
+        RES=$(wget -qO- "http://127.0.0.1:${BACKEND_PORT:-3010}/health" 2>/dev/null || true)
+      fi
+      echo "$RES" | grep -q '"ok":true' && READY=1 && break
+      sleep 1
+    done
+    if [ "$READY" = "1" ]; then
+      echo "✅ Backend ready"
+    else
+      echo "⚠️  Backend not responding to health check, starting frontend anyway"
+    fi
     
     # Start frontend in background
     FRONTEND_PORT=${FRONTEND_PORT:-5173} BACKEND_PORT=${BACKEND_PORT:-3010} npm run dev:client > logs/frontend.log 2>&1 &
