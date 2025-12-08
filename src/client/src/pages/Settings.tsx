@@ -107,6 +107,28 @@ export default function SettingsPage() {
         ]);
     }, []);
 
+    // Load cron jobs function - defined before loadData so it can be used there
+    const loadCronJobs = useCallback(async () => {
+        setCronLoading(true);
+        try {
+            const res = await fetchWithTimeout('/api/cron-jobs');
+            if (res.ok) {
+                const data = await res.json();
+                setCronJobs(Array.isArray(data) ? data : []);
+            } else {
+                // Handle non-OK responses
+                const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
+                console.error('Failed to load cron jobs:', errorData);
+                setCronJobs([]); // Set empty array on error
+            }
+        } catch (e: any) {
+            console.error('Failed to load cron jobs:', e);
+            setCronJobs([]); // Set empty array on error
+        } finally {
+            setCronLoading(false);
+        }
+    }, [fetchWithTimeout]);
+
     const loadData = useCallback(async () => {
             setLoading(true);
             setError('');
@@ -194,22 +216,7 @@ export default function SettingsPage() {
             } finally {
                 setLoading(false);
             }
-    }, [fetchWithTimeout]);
-
-    const loadCronJobs = useCallback(async () => {
-        setCronLoading(true);
-        try {
-            const res = await fetchWithTimeout('/api/cron-jobs');
-            if (res.ok) {
-                const data = await res.json();
-                setCronJobs(Array.isArray(data) ? data : []);
-            }
-        } catch (e: any) {
-            console.error('Failed to load cron jobs:', e);
-        } finally {
-            setCronLoading(false);
-        }
-    }, [fetchWithTimeout]);
+    }, [fetchWithTimeout, loadCronJobs]);
 
     const loadLoginIpWhitelist = useCallback(async () => {
         try {
