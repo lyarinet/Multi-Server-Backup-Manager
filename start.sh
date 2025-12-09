@@ -53,19 +53,9 @@ start_via_systemd() {
     if [ "$EUID" -ne 0 ]; then
         echo "⚠️  Service is installed but not running"
         echo "   Starting service requires root privileges"
-        echo ""
-        echo "To start the service, run:"
-        echo "  sudo systemctl start $SERVICE_NAME"
-        echo ""
-        echo "Or start directly (development mode) with:"
-        echo "  FORCE_DIRECT=1 ./start.sh"
-        echo ""
-        read -p "Start directly in development mode instead? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 0
-        fi
-        return 1  # Fall through to direct start
+        echo "To start the service: sudo systemctl start $SERVICE_NAME"
+        echo "Falling back to direct start (development mode)"
+        return 1
     else
         echo "🚀 Starting systemd service..."
         systemctl start "$SERVICE_NAME"
@@ -100,16 +90,13 @@ else
   echo "📦 Installing dependencies..."
   
   # Check if running as root/sudo, use sudo for npm install if needed
-  if [ "$EUID" -eq 0 ]; then
-    echo "⚠️  Running as root, using npm install..."
-    npm install
+  if npm install 2>/dev/null; then
+    echo "✅ Dependencies installed successfully"
   else
-    # Try normal install first
-    if npm install 2>/dev/null; then
-      echo "✅ Dependencies installed successfully"
-    else
-      echo "⚠️  Permission error detected, trying with sudo..."
-      sudo npm install
+    echo "⚠️  npm install failed"
+    if command -v sudo >/dev/null 2>&1; then
+      echo "   Retrying with sudo..."
+      sudo npm install || true
     fi
   fi
   
@@ -221,8 +208,15 @@ mkdir -p logs
 
 # Kill any processes using the ports
 echo "🔧 Cleaning up ports..."
-sudo fuser -k 3010/tcp 2>/dev/null || sudo lsof -ti:3010 | xargs -r sudo kill 2>/dev/null || true
-sudo fuser -k 5173/tcp 2>/dev/null || sudo lsof -ti:5173 | xargs -r sudo kill 2>/dev/null || true
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k 3010/tcp 2>/dev/null || true
+  fuser -k 5173/tcp 2>/dev/null || true
+else
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -ti:3010 | xargs -r kill 2>/dev/null || true
+    lsof -ti:5173 | xargs -r kill 2>/dev/null || true
+  fi
+fi
 echo "✅ Ports cleaned"
 
 # Start the application
