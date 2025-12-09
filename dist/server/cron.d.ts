@@ -1,5 +1,6 @@
 declare class CronScheduler {
     private jobs;
+    private getTimezone;
     /**
      * Convert schedule type to cron expression
      */
@@ -28,6 +29,7 @@ declare class CronScheduler {
      * Schedule a single job
      */
     scheduleJob(jobId: number): Promise<void>;
+    runNow(jobId: number): Promise<void>;
     /**
      * Stop a specific job
      */

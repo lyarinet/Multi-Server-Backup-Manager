@@ -8,6 +8,9 @@ class CronScheduler {
     constructor() {
         this.jobs = new Map();
     }
+    getTimezone() {
+        return process.env.TZ || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+    }
     /**
      * Convert schedule type to cron expression
      */
@@ -173,7 +176,7 @@ class CronScheduler {
             await this.executeBackup(job.id, job.serverId || null);
         }, {
             scheduled: true,
-            timezone: 'UTC', // You can make this configurable
+            timezone: this.getTimezone(),
         });
         this.jobs.set(job.id, { id: job.id, task });
         // Update next run time
@@ -182,6 +185,13 @@ class CronScheduler {
             .set({ nextRun: nextRun.toISOString(), schedule: cronExpr })
             .where(eq(cronJobs.id, job.id));
         console.log(`[Cron] Scheduled job ${job.id} (${job.name}) with expression: ${cronExpr}`);
+    }
+    async runNow(jobId) {
+        const job = await db.select().from(cronJobs).where(eq(cronJobs.id, jobId)).get();
+        if (!job) {
+            throw new Error(`Job ${jobId} not found`);
+        }
+        await this.executeBackup(job.id, job.serverId || null);
     }
     /**
      * Stop a specific job

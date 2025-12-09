@@ -1049,6 +1049,18 @@ export default function SettingsPage() {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={async () => {
+                                                    await fetch(`/api/cron-jobs/${job.id}/run-now`, { method: 'POST' });
+                                                    await loadCronJobs();
+                                                }}
+                                                className="gap-2"
+                                            >
+                                                <Play className="w-4 h-4" />
+                                                Run Now
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={async () => {
                                                     if (confirm('Are you sure you want to delete this schedule?')) {
                                                         const res = await fetch(`/api/cron-jobs/${job.id}`, { method: 'DELETE' });
                                                         if (res.ok) {

@@ -1731,6 +1731,21 @@ app.delete('/api/cron-jobs/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// Run cron job immediately
+app.post('/api/cron-jobs/:id/run-now', authMiddleware, async (req, res) => {
+    try {
+        const jobId = parseInt(req.params.id);
+        const job = await db.select().from(cronJobs).where(eq(cronJobs.id, jobId)).get();
+        if (!job) return res.status(404).json({ error: 'Cron job not found' });
+
+        await cronScheduler.runNow(jobId);
+        res.json({ ok: true });
+    } catch (e: any) {
+        console.error('Error running cron job now:', e);
+        res.status(400).json({ error: 'Failed to run cron job', details: e.message });
+    }
+});
+
 // IP Whitelist Management API
 app.get('/api/ip-whitelist/status', authMiddleware, async (_req, res) => {
     try {

@@ -13,6 +13,10 @@ interface CronJobTask {
 class CronScheduler {
     private jobs: Map<number, CronJobTask> = new Map();
 
+    private getTimezone(): string {
+        return process.env.TZ || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+    }
+
     /**
      * Convert schedule type to cron expression
      */
@@ -210,7 +214,7 @@ class CronScheduler {
             await this.executeBackup(job.id, job.serverId || null);
         }, {
             scheduled: true,
-            timezone: 'UTC', // You can make this configurable
+            timezone: this.getTimezone(),
         });
 
         this.jobs.set(job.id, { id: job.id, task });
@@ -222,6 +226,14 @@ class CronScheduler {
             .where(eq(cronJobs.id, job.id));
 
         console.log(`[Cron] Scheduled job ${job.id} (${job.name}) with expression: ${cronExpr}`);
+    }
+
+    async runNow(jobId: number) {
+        const job = await db.select().from(cronJobs).where(eq(cronJobs.id, jobId)).get();
+        if (!job) {
+            throw new Error(`Job ${jobId} not found`);
+        }
+        await this.executeBackup(job.id, job.serverId || null);
     }
 
     /**
@@ -257,4 +269,3 @@ class CronScheduler {
 
 // Singleton instance
 export const cronScheduler = new CronScheduler();
-
