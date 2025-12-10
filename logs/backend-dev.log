@@ -1,0 +1,96 @@
+
+> server-backup-web@1.0.0 dev:server
+> PORT=${PORT:-3010} nodemon --watch src/server --exec tsx src/server/index.ts
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): src/server/**/*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/server/index.ts`[39m
+Database connection established
+Server running at http://localhost:3010
+[Cron] Loading cron jobs from database...
+[Cron] Stopped all jobs
+[Cron] Scheduled job 1 (daily backup 2 AM) with expression: 27 12 * * * (timezone: Asia/Karachi)
+[Cron] Loaded 1 cron job(s)
+[Cron] Scheduled job 3 (tess) with expression: 52 19 * * * (timezone: Asia/Karachi)
+[Cron] Executing backup job 3 for server all
+[Backup 75] Using server-specific local backup path: /opt/backup
+[Backup 76] Using server-specific local backup path: /opt/backup
+[Cron] Backup job 3 completed successfully
+[Backup 75] Starting backup process...
+[Backup 75] Creating remote directory: /tmp/backup_2025-12-10_xTerminal
+[Backup 76] Starting backup process...
+[Backup 76] Creating remote directory: /tmp/backup_2025-12-10_local_backups
+[Backup 75] Compressing /var/www...
+[Backup 75] STDERR: tar: Removing leading `/' from member names
+
+[Backup 76] Skipping /var/www backup
+[Backup 76] Skipping /var/log backup
+[Backup 76] Skipping /etc/nginx backup
+[Backup 76] Compressing /var/www/html/backup/bk...
+[Backup 76] STDERR: tar: Removing leading `/' from member names
+
+[Backup 76] Dumping all databases...
+[Backup 76] STDERR: mysqldump: [Warning] Using a password on the command line interface can be insecure.
+
+[Backup 75] Compressing /var/log...
+[Backup 75] STDERR: tar: Removing leading `/' from member names
+
+[Backup 76] STDERR: mysqldump: Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces
+
+[Backup 76] Rsyncing to local: /opt/backup/backup_2025-12-10_local_backups
+[Backup 76] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.158:/tmp/backup_2025-12-10_local_backups/ /opt/backup/backup_2025-12-10_local_backups/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 76] Rsync failed, falling back to SFTP
+[Backup 76] Starting SFTP transfer from /tmp/backup_2025-12-10_local_backups to /opt/backup/backup_2025-12-10_local_backups
+[Backup 76] SFTP Connection ready
+[Backup 76] Found 2 files to transfer via SFTP
+[Backup 76] SFTP downloading: local_backups_custom__var_www_html_backup_bk.tar.gz
+[Backup 76] SFTP downloading: local_backups_db-dump-all.sql
+[Backup 76] SFTP transfer completed successfully
+[Backup 76] Cleaning up remote files...
+[Backup 76] Backup completed successfully.
+[Backup 76] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 76] Drive target folder: root
+Drive authentication error: invalid_client undefined
+[Backup 76] Google Drive auto-upload failed: Drive authentication failed: invalid_client
+[Backup 75] Compressing /etc/nginx...
+[Backup 75] STDERR: tar: Removing leading `/' from member names
+
+[Backup 75] Compressing /var/www/html/xTerminal...
+[Backup 75] STDERR: tar: Removing leading `/' from member names
+
+[Backup 75] Dumping selected databases: xTerminal
+[Backup 75] DEBUG: dbSelected array: ["xTerminal"]
+[Backup 75] Dumping database: xTerminal
+[Backup 75] DEBUG: Executing mysqldump for xTerminal
+[Backup 75] Rsyncing to local: /opt/backup/backup_2025-12-10_xTerminal
+[Backup 75] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.156:/tmp/backup_2025-12-10_xTerminal/ /opt/backup/backup_2025-12-10_xTerminal/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: [Receiver] safe_write failed to write 4 bytes to socket: Broken pipe (32)
+rsync error: error in IPC code (code 14) at io.c(327) [Receiver=3.2.7]
+
+[Backup 75] Rsync failed, falling back to SFTP
+[Backup 75] Starting SFTP transfer from /tmp/backup_2025-12-10_xTerminal to /opt/backup/backup_2025-12-10_xTerminal
+[Backup 75] SFTP Connection ready
+[Backup 75] Found 5 files to transfer via SFTP
+[Backup 75] SFTP downloading: xTerminal_nginx_bak.tar.gz
+[Backup 75] SFTP downloading: xTerminal_www_bak.tar.gz
+[Backup 75] SFTP downloading: xTerminal_db-xTerminal.sql
+[Backup 75] SFTP downloading: xTerminal_logs_bak.tar.gz
+[Backup 75] SFTP downloading: xTerminal_custom__var_www_html_xTerminal.tar.gz
+[Backup 75] SFTP transfer completed successfully
+[Backup 75] Cleaning up remote files...
+[Backup 75] Backup completed successfully.
+[Backup 75] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 75] Drive target folder: root
+Drive authentication error: invalid_client undefined
+[Backup 75] Google Drive auto-upload failed: Drive authentication failed: invalid_client

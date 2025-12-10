@@ -36,4 +36,4 @@ echo "🔧 Cleaning up ports..."
 sudo fuser -k 3010/tcp 2>/dev/null || sudo lsof -ti:3010 | xargs -r sudo kill 2>/dev/null || true
 sudo fuser -k 5173/tcp 2>/dev/null || sudo lsof -ti:5173 | xargs -r sudo kill 2>/dev/null || true
 
-echo "✅ All processes stopped"
+echo " ✅ All processes stopped"

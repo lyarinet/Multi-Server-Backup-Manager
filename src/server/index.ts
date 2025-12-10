@@ -984,14 +984,6 @@ app.get('/', (_req, res) => {
     });
 });
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client')));
-    app.get('*', (_req, res) => {
-        res.sendFile(path.join(__dirname, '../client/index.html'));
-    });
-}
-
 function startHttpServer(p: number) {
     const host = process.env.HOST || '0.0.0.0';
     app.listen(p, host as any, () => {
@@ -2158,3 +2150,11 @@ app.get('/health', async (_req, res) => {
         res.send(JSON.stringify({ ok: false, error: 'Database connection failed', time: new Date().toISOString() }));
     }
 });
+
+// Serve frontend in production - MUST be after all API routes
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../client')));
+    app.get('*', (_req, res) => {
+        res.sendFile(path.join(__dirname, '../client/index.html'));
+    });
+}

@@ -97,10 +97,14 @@ export default function SettingsPage() {
         }));
     };
 
-    // Helper function to fetch with timeout
+    // Helper function to fetch with timeout (uses global fetch interceptor which adds auth headers)
     const fetchWithTimeout = useCallback((url: string, timeout = 10000): Promise<Response> => {
         return Promise.race([
-            fetch(url),
+            fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+                }
+            }),
             new Promise<never>((_, reject) => 
                 setTimeout(() => reject(new Error(`Request timeout - Backend server may not be running`)), timeout)
             )
