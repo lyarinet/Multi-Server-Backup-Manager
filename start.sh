@@ -182,12 +182,13 @@ fi
 # If systemd service exists and should be used, start via systemd
 if [ "$USE_SYSTEMD" -eq 1 ]; then
     if start_via_systemd; then
-        exit 0  # Successfully started via systemd
+        echo ""
+        echo "🔧 Starting local development servers alongside systemd service"
+    else
+        echo ""
+        echo "📝 Falling back to direct start (development mode)..."
+        echo ""
     fi
-    # If start_via_systemd returns 1, fall through to direct start
-    echo ""
-    echo "📝 Falling back to direct start (development mode)..."
-    echo ""
 fi
 
 # Direct start mode (development)
@@ -229,8 +230,8 @@ if [ -n "$FRONTEND_PORT" ]; then
 fi
 
 # Start backend and frontend with explicit ports
-if [ "$FAST" = "1" ] || [ "$SKIP_FRONTEND" = "1" ]; then
-  echo "✨ Starting backend only (FAST mode)"
+if [ "$SKIP_FRONTEND" = "1" ]; then
+  echo "✨ Starting backend only"
   
   if [ "$BACKGROUND_MODE" -eq 1 ]; then
     echo "🚀 Starting in background mode..."
