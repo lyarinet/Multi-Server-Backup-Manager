@@ -9,7 +9,7 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo "Usage: ./start.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  BACKGROUND=1    Start in background mode (default if not interactive terminal)"
+    echo "  BACKGROUND=1    Start in background mode (default if not interactive terminal)."
     echo "  FORCE_DIRECT=1  Force direct start even if systemd service exists"
     echo "  FAST=1          Skip dependency install, database setup, and build"
     echo "  SKIP_FRONTEND=1 Start backend only"
