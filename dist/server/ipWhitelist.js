@@ -1,5 +1,5 @@
-import { db } from './db';
-import { ipWhitelist, loginIpWhitelist, settings } from './db/schema';
+import { db } from './db/index.js';
+import { ipWhitelist, loginIpWhitelist, settings } from './db/schema.js';
 /**
  * Check if an IP address matches a CIDR range
  */

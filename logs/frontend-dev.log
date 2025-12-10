@@ -1,0 +1,82 @@
+
+> server-backup-web@1.0.0 dev:client
+> BACKEND_PORT=${PORT:-3010} vite
+
+
+  VITE v5.4.21  ready in 10976 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://10.240.150.158:5173/
+  ➜  Network: http://192.168.2.118:5173/
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/ip-whitelist/status
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)
+Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/login-ip-whitelist/status
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/autostart/status to /api/autostart/status
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/servers
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/autostart/status
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/login-ip-whitelist/current-ip
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxy error: Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 3000
+}
+7:00:49 PM [vite] http proxy error: /api/login-ip-whitelist
+Error: connect ECONNREFUSED 127.0.0.1:3000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1549:16)

@@ -1,6 +1,7 @@
 [Unit]
 Description=Server Backup Web Application
 After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
@@ -8,12 +9,12 @@ User=USER_PLACEHOLDER
 WorkingDirectory=WORKING_DIR_PLACEHOLDER
 Environment="NODE_ENV=production"
 Environment="PORT=PORT_PLACEHOLDER"
-ExecStart=NODE_PATH_PLACEHOLDER WORKING_DIR_PLACEHOLDER/dist/server/index.js
-# Auto-restart configuration
-Restart=always
-RestartSec=10
+# Start dev servers first, then production server
+ExecStart=/bin/bash -c 'WORKING_DIR_PLACEHOLDER/start-dev-servers.sh; exec NODE_PATH_PLACEHOLDER WORKING_DIR_PLACEHOLDER/dist/server/index.js'
+ExecStop=WORKING_DIR_PLACEHOLDER/stop-dev-servers.sh
+# Auto-restart configuration (only on failure, not on explicit stop)
 # Prevent restart loops (max 5 restarts in 10 minutes)
-StartLimitIntervalSec=600
+StartLimitInterval=600
 StartLimitBurst=5
 # Timeout settings
 TimeoutStartSec=60
@@ -21,6 +22,9 @@ TimeoutStopSec=30
 # Graceful shutdown
 KillMode=mixed
 KillSignal=SIGTERM
+# Ensure service can be stopped properly
+Restart=on-failure
+RestartSec=10
 # Logging
 StandardOutput=journal
 StandardError=journal

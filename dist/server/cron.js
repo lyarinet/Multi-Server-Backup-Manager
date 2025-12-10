@@ -1,9 +1,9 @@
 import cron from 'node-cron';
-import { db } from './db';
-import { cronJobs, servers, settings } from './db/schema';
+import { db } from './db/index.js';
+import { cronJobs, servers, settings } from './db/schema.js';
 import { eq } from 'drizzle-orm';
-import { BackupManager } from './backup';
-import { backupLogs } from './db/schema';
+import { BackupManager } from './backup.js';
+import { backupLogs } from './db/schema.js';
 class CronScheduler {
     constructor() {
         this.jobs = new Map();

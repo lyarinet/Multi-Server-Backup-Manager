@@ -1,8 +1,14 @@
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import cors from 'cors';
 import { db } from './db';
 import { servers, backupLogs, users, sessions, cronJobs, ipWhitelist, loginIpWhitelist } from './db/schema';
+
+// ES module __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { cronScheduler } from './cron';

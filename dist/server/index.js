@@ -1,12 +1,15 @@
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
-import { db } from './db';
-import { servers, backupLogs, users, sessions, cronJobs, ipWhitelist, loginIpWhitelist } from './db/schema';
+import { db } from './db/index.js';
+import { servers, backupLogs, users, sessions, cronJobs, ipWhitelist, loginIpWhitelist } from './db/schema.js';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { cronScheduler } from './cron';
-import { isIpWhitelisted, isLoginIpWhitelisted, getClientIp, validateIpOrCidr } from './ipWhitelist';
+import { cronScheduler } from './cron.js';
+import { isIpWhitelisted, isLoginIpWhitelisted, getClientIp, validateIpOrCidr } from './ipWhitelist.js';
 const app = express();
 const defaultPort = Number(process.env.PORT) || 3000;
 let port = defaultPort;
@@ -372,9 +375,9 @@ app.delete('/api/servers/:id', authMiddleware, async (req, res) => {
     await db.delete(servers).where(eq(servers.id, serverId));
     res.json({ ok: true });
 });
-import { BackupManager } from './backup';
+import { BackupManager } from './backup.js';
 import { Client } from 'ssh2';
-import { settings } from './db/schema';
+import { settings } from './db/schema.js';
 import { promises as fsp } from 'fs';
 import fs from 'fs';
 import https from 'https';
@@ -1072,7 +1075,7 @@ app.put('/api/settings', authMiddleware, async (req, res) => {
         res.status(400).json({ error: 'Invalid settings', details: e.message });
     }
 });
-import { GoogleDriveService } from './drive';
+import { GoogleDriveService } from './drive.js';
 // Helper to get Drive service instance
 function getDriveService() {
     return async () => {

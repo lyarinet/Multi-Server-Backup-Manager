@@ -4,6 +4,14 @@
 
 echo "🛑 Stopping Server Backup Web App..."
 
+# Stop systemd service if it exists and is running
+SERVICE_NAME="backup-system"
+if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    echo "Stopping systemd service..."
+    sudo systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    echo "✅ Systemd service stopped"
+fi
+
 # Kill processes by PID files if they exist
 if [ -f "logs/backend.pid" ]; then
   BACKEND_PID=$(cat logs/backend.pid)
@@ -30,6 +38,13 @@ if [ -f "logs/frontend.pid" ]; then
     rm logs/frontend.pid
   fi
 fi
+
+# Kill any dev processes (vite, nodemon, etc.)
+echo "🔧 Stopping development servers..."
+sudo pkill -f "vite" 2>/dev/null || true
+sudo pkill -f "npm run dev" 2>/dev/null || true
+sudo pkill -f "nodemon.*dev:server" 2>/dev/null || true
+sudo pkill -f "tsx.*dev:server" 2>/dev/null || true
 
 # Also kill by port (fallback)
 echo "🔧 Cleaning up ports..."

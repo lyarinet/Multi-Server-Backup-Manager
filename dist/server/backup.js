@@ -2,10 +2,10 @@ import { Client } from 'ssh2';
 import fs from 'fs';
 import { exec } from 'child_process';
 import path from 'path';
-import { db } from './db';
-import { backupLogs, settings } from './db/schema';
+import { db } from './db/index.js';
+import { backupLogs, settings } from './db/schema.js';
 import { eq } from 'drizzle-orm';
-import { GoogleDriveService } from './drive';
+import { GoogleDriveService } from './drive.js';
 export class BackupManager {
     constructor(config, logId) {
         this.config = config;

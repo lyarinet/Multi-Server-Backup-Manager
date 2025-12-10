@@ -94,15 +94,25 @@ function install_service() {
     echo "  Service file: $SERVICE_FILE"
     echo ""
     echo "Auto-restart Configuration:"
-    echo "  ✓ Auto-restart enabled (Restart=always)"
+    echo "  ✓ Auto-restart on failure (Restart=on-failure)"
     echo "  ✓ Restart delay: 10 seconds"
     echo "  ✓ Restart protection: Max 5 restarts in 10 minutes"
+    echo "  ✓ Service will stay stopped when explicitly stopped"
+    echo ""
+    # Automatically enable the service for autostart
+    if systemctl enable "$SERVICE_NAME" 2>/dev/null; then
+        echo "  ✓ Autostart enabled (service will start on boot)"
+    else
+        echo "  ⚠️  Could not enable autostart automatically"
+        echo "     Run manually: sudo systemctl enable $SERVICE_NAME"
+    fi
+    
     echo ""
     echo "Next steps:"
-    echo "  To enable autostart: sudo systemctl enable $SERVICE_NAME"
     echo "  To start the service: sudo systemctl start $SERVICE_NAME"
     echo "  To check status: sudo systemctl status $SERVICE_NAME"
     echo "  To view logs: sudo journalctl -u $SERVICE_NAME -f"
+    echo "  To disable autostart: sudo systemctl disable $SERVICE_NAME"
 }
 
 function uninstall_service() {
