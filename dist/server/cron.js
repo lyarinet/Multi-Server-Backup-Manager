@@ -19,19 +19,21 @@ class CronScheduler {
             scheduleTime = '02:00'; // Default to 2 AM
         }
         const [hours, minutes] = scheduleTime.split(':').map(Number);
+        const h = Number.isFinite(hours) ? hours : 2;
+        const m = Number.isFinite(minutes) ? minutes : 0;
         switch (scheduleType) {
             case 'daily':
                 // Run daily at specified time
-                return `${minutes} ${hours} * * *`;
+                return `${m} ${h} * * *`;
             case 'weekly':
                 // Run weekly on specified day at specified time
                 // scheduleDay: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
                 const dayOfWeek = scheduleDay !== undefined ? scheduleDay : 0;
-                return `${minutes} ${hours} * * ${dayOfWeek}`;
+                return `${m} ${h} * * ${dayOfWeek}`;
             case 'monthly':
                 // Run monthly on specified day at specified time
                 const dayOfMonth = scheduleDay !== undefined ? scheduleDay : 1;
-                return `${minutes} ${hours} ${dayOfMonth} * *`;
+                return `${m} ${h} ${dayOfMonth} * *`;
             case 'custom':
                 // Return the custom cron expression (stored in schedule field)
                 // This will be validated separately
@@ -44,9 +46,8 @@ class CronScheduler {
      * Validate cron expression
      */
     validateCronExpression(cronExpr) {
-        // Basic validation: 5 fields (minute hour day month dayOfWeek)
         const parts = cronExpr.trim().split(/\s+/);
-        if (parts.length !== 5) {
+        if (parts.length !== 5 && parts.length !== 6) {
             return false;
         }
         return cron.validate(cronExpr);
@@ -172,11 +173,12 @@ class CronScheduler {
             cronExpr = this.scheduleToCron(job.scheduleType, job.scheduleTime || undefined, job.scheduleDay || undefined);
         }
         // Create cron task
+        const tz = this.getTimezone();
         const task = cron.schedule(cronExpr, async () => {
             await this.executeBackup(job.id, job.serverId || null);
         }, {
             scheduled: true,
-            timezone: this.getTimezone(),
+            timezone: tz,
         });
         this.jobs.set(job.id, { id: job.id, task });
         // Update next run time
@@ -184,7 +186,7 @@ class CronScheduler {
         await db.update(cronJobs)
             .set({ nextRun: nextRun.toISOString(), schedule: cronExpr })
             .where(eq(cronJobs.id, job.id));
-        console.log(`[Cron] Scheduled job ${job.id} (${job.name}) with expression: ${cronExpr}`);
+        console.log(`[Cron] Scheduled job ${job.id} (${job.name}) with expression: ${cronExpr} (timezone: ${tz})`);
     }
     async runNow(jobId) {
         const job = await db.select().from(cronJobs).where(eq(cronJobs.id, jobId)).get();

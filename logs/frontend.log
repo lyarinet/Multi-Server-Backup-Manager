@@ -3,7 +3,7 @@
 > BACKEND_PORT=${PORT:-3010} vite
 
 
-  VITE v5.4.21  ready in 1302 ms
+  VITE v5.4.21  ready in 567 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://10.240.150.158:5173/
@@ -15,14 +15,22 @@ Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
 Proxying GET /api/autostart/status to /api/autostart/status
 Proxying GET /api/servers to /api/servers
 Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
-Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
 Proxying GET /api/settings to /api/settings
 Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
 Proxying GET /api/settings to /api/settings
-Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
 Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
 Proxying GET /api/autostart/status to /api/autostart/status
-Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
 Proxying GET /api/cron-jobs to /api/cron-jobs
-Proxying GET /api/login-ip-whitelist/check to /api/login-ip-whitelist/check
-Proxying GET /api/login-ip-whitelist/check to /api/login-ip-whitelist/check
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying PUT /api/cron-jobs/1 to /api/cron-jobs/1
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying POST /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying POST /api/cron-jobs/2/run-now to /api/cron-jobs/2/run-now
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/settings to /api/settings
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/settings to /api/settings
+Proxying GET /api/cron-jobs to /api/cron-jobs
