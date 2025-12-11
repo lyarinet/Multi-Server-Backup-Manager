@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { X, Cloud, Info, AlertTriangle, ExternalLink, Check } from 'lucide-react';
+import { X, Info, AlertTriangle, ExternalLink, Check } from 'lucide-react';
 import { GoogleDriveHelpModal } from './GoogleDriveHelpModal';
 
 interface CloudStorageModalProps {
@@ -47,7 +47,7 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
     
     const [loading, setLoading] = useState(false);
     const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: React.ReactNode } | null>(null);
     const [helpModalOpen, setHelpModalOpen] = useState(false);
 
     useEffect(() => {
@@ -73,12 +73,6 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
 
     if (!isOpen) return null;
 
-    const getRedirectUri = () => {
-        const protocol = window.location.protocol;
-        const host = window.location.host;
-        return `${protocol}//${host}/oauth_callback`;
-    };
-
     const handleTest = async () => {
         if (!clientId || !clientSecret || !refreshToken) {
             setTestResult({ success: false, message: 'Please fill in Client ID, Client Secret, and Refresh Token' });
@@ -97,6 +91,11 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                 try {
                     const error = await res.json();
                     errorMessage = error.error || error.message || `HTTP ${res.status}: ${res.statusText}`;
+                    
+                    // Provide helpful guidance for invalid refresh token
+                    if (errorMessage.includes('Invalid refresh token') || errorMessage.includes('invalid_grant')) {
+                        errorMessage = 'Invalid refresh token. Please click "Get via OAuth" to regenerate it, or update your refresh token manually.';
+                    }
                 } catch (e) {
                     errorMessage = `HTTP ${res.status}: ${res.statusText}`;
                 }
@@ -105,7 +104,11 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
             }
         } catch (error: any) {
             console.error('Drive test exception:', error);
-            setTestResult({ success: false, message: error.message || 'Failed to test connection' });
+            let errorMessage = error.message || 'Failed to test connection';
+            if (errorMessage.includes('Invalid refresh token') || errorMessage.includes('invalid_grant')) {
+                errorMessage = 'Invalid refresh token. Please click "Get via OAuth" to regenerate it, or update your refresh token manually.';
+            }
+            setTestResult({ success: false, message: errorMessage });
         } finally {
             setTesting(false);
         }
@@ -113,6 +116,7 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         setLoading(true);
         try {
             let payload: any = {};
@@ -390,7 +394,11 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={async () => {
+                                            onClick={async (e) => {
+                                                // Prevent form submission
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                
                                                 try {
                                                     const res = await fetch('/api/drive/oauth-url');
                                                     if (res.ok) {
@@ -399,46 +407,162 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                                         console.log('Using redirect URI:', data.redirectUri);
                                                         
                                                         // Open OAuth window
+                                                        console.log('Opening OAuth popup with URL:', data.authUrl);
                                                         const oauthWindow = window.open(
                                                             data.authUrl,
                                                             'oauth',
-                                                            'width=600,height=700,scrollbars=yes,resizable=yes'
+                                                            'width=600,height=700,scrollbars=yes,resizable=yes,location=yes,toolbar=no'
                                                         );
                                                         
-                                                        // Listen for OAuth success message
+                                                        // Check if popup was blocked (avoid checking .closed due to COOP policy)
+                                                        if (!oauthWindow) {
+                                                            alert('Popup was blocked by your browser. Please allow popups for this site and try again.');
+                                                            console.error('OAuth popup was blocked');
+                                                            return;
+                                                        }
+                                                        
+                                                        console.log('OAuth popup opened successfully');
+                                                        
+                                                        // Focus the popup window
+                                                        try {
+                                                            oauthWindow.focus();
+                                                        } catch (e) {
+                                                            console.log('Could not focus popup:', e);
+                                                        }
+                                                        
+                                                        // Store the initial token before OAuth starts for comparison
+                                                        const initialToken = refreshToken;
+                                                        
+                                                        // Declare polling interval variables for cleanup
+                                                        let checkTokenSaved: NodeJS.Timeout | null = null;
+                                                        
+                                                        // Helper function to handle successful token detection
+                                                        const handleTokenDetected = async () => {
+                                                            // Clear all intervals and listeners
+                                                            if (checkTokenSaved) {
+                                                                clearInterval(checkTokenSaved);
+                                                                checkTokenSaved = null;
+                                                            }
+                                                            window.removeEventListener('message', messageHandler);
+                                                            
+                                                            // Note: We don't try to close the popup window due to COOP policy restrictions
+                                                            // The OAuth callback page will close itself, or the user can close it manually
+                                                            // Attempting to close it programmatically causes COOP errors
+                                                            
+                                                            // Fetch the new token and update the form
+                                                            try {
+                                                                const res = await fetch('/api/settings');
+                                                                if (res.ok) {
+                                                                    const settings = await res.json();
+                                                                    if (settings.driveRefreshToken) {
+                                                                        const oldToken = initialToken; // Compare against token before OAuth started
+                                                                        const newToken = settings.driveRefreshToken;
+                                                                        
+                                                                        console.log('Token comparison:', {
+                                                                            oldTokenExists: !!oldToken,
+                                                                            oldTokenLength: oldToken?.length || 0,
+                                                                            newTokenLength: newToken?.length || 0,
+                                                                            tokensMatch: oldToken === newToken,
+                                                                            tokensEqual: oldToken === newToken
+                                                                        });
+                                                                        
+                                                                        // Check if token actually changed
+                                                                        if (oldToken && oldToken === newToken) {
+                                                                            // Same token - Google didn't provide a new one
+                                                                            setTestResult({ 
+                                                                                success: false, 
+                                                                                message: (
+                                                                                    <>
+                                                                                        <p className="font-bold mb-2">⚠️ Same token detected.</p>
+                                                                                        <p className="mb-2">Google did not provide a new refresh token. This usually means:</p>
+                                                                                        <ol className="list-decimal list-inside ml-4 mb-2">
+                                                                                            <li>The redirect URI <code className="bg-gray-800 px-1 rounded">https://bk.lyarinet.com/oauth_callback</code> is not configured in your new Client ID</li>
+                                                                                            <li>You need to revoke existing access at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">Google Account Permissions</a></li>
+                                                                                            <li>Search for your Client ID: <code className="bg-gray-800 px-1 rounded">238808777198-do8s25kp1e1bshcrrssptaki26p1it55</code></li>
+                                                                                        </ol>
+                                                                                        <p className="mt-2">After revoking, click "Get via OAuth" again to get a fresh token.</p>
+                                                                                    </>
+                                                                                )
+                                                                            });
+                                                                        } else {
+                                                                            // New token detected
+                                                                            setRefreshToken(newToken);
+                                                                            setTestResult({ 
+                                                                                success: true, 
+                                                                                message: 'Refresh token successfully obtained! You can now test the connection or save the configuration.' 
+                                                                            });
+                                                                            console.log('Refresh token updated in form', {
+                                                                                oldLength: oldToken?.length || 0,
+                                                                                newLength: newToken?.length || 0,
+                                                                                changed: oldToken !== newToken
+                                                                            });
+                                                                        }
+                                                                    } else {
+                                                                        setTestResult({ 
+                                                                            success: false, 
+                                                                            message: 'No refresh token was saved. Please try the OAuth flow again.' 
+                                                                        });
+                                                                    }
+                                                                } else {
+                                                                    setTestResult({ 
+                                                                        success: false, 
+                                                                        message: `Failed to fetch settings: ${res.status} ${res.statusText}` 
+                                                                    });
+                                                                }
+                                                            } catch (e) {
+                                                                console.error('Error fetching updated settings:', e);
+                                                                setTestResult({ 
+                                                                    success: false, 
+                                                                    message: `Error fetching updated settings: ${e instanceof Error ? e.message : 'Unknown error'}` 
+                                                                });
+                                                            }
+                                                        };
+                                                        
+                                                        // Listen for OAuth success/error messages
                                                         const messageHandler = (event: MessageEvent) => {
                                                             // Only accept messages from same origin
                                                             if (event.origin !== window.location.origin) {
                                                                 return;
                                                             }
                                                             if (event.data && event.data.type === 'oauth_success') {
-                                                                window.removeEventListener('message', messageHandler);
-                                                                try {
-                                                                    if (oauthWindow) {
-                                                                        oauthWindow.close();
-                                                                    }
-                                                                } catch (e) {
-                                                                    // Ignore errors when closing window (COOP policy)
-                                                                }
-                                                                // Reload settings to get the new refresh token
+                                                                console.log('OAuth success message received from popup');
+                                                                // Wait a moment for the server to save the token
                                                                 setTimeout(() => {
-                                                                    window.location.reload();
-                                                                }, 1000);
+                                                                    handleTokenDetected();
+                                                                }, 500);
+                                                            } else if (event.data && event.data.type === 'oauth_error') {
+                                                                console.error('OAuth error from popup:', event.data);
+                                                                setTestResult({
+                                                                    success: false,
+                                                                    message: `OAuth error: ${event.data.message || event.data.error || 'Unknown error'}. Please check the popup window for details.`
+                                                                });
+                                                                // Clean up
+                                                                if (checkTokenSaved) {
+                                                                    clearInterval(checkTokenSaved);
+                                                                    checkTokenSaved = null;
+                                                                }
+                                                                window.removeEventListener('message', messageHandler);
                                                             }
                                                         };
                                                         
                                                         window.addEventListener('message', messageHandler);
                                                         
-                                                        // Poll the API to check if refresh token was saved (instead of checking window.closed)
+                                                        // Note: We don't check oauthWindow.closed due to COOP policy restrictions
+                                                        // The polling mechanism below will detect when the token is saved
+                                                        
+                                                        // Poll the API to check if refresh token was saved (backup method)
                                                         let pollCount = 0;
                                                         const maxPolls = 60; // Poll for up to 60 seconds
                                                         
-                                                        const checkTokenSaved = setInterval(async () => {
+                                                        checkTokenSaved = setInterval(async () => {
                                                             pollCount++;
                                                             
                                                             // Stop polling after max attempts
                                                             if (pollCount > maxPolls) {
-                                                                clearInterval(checkTokenSaved);
+                                                                if (checkTokenSaved) {
+                                                                    clearInterval(checkTokenSaved);
+                                                                    checkTokenSaved = null;
+                                                                }
                                                                 window.removeEventListener('message', messageHandler);
                                                                 return;
                                                             }
@@ -449,10 +573,9 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                                                 if (res.ok) {
                                                                     const settings = await res.json();
                                                                     if (settings.driveRefreshToken) {
-                                                                        // Token was saved! Reload the page
-                                                                        clearInterval(checkTokenSaved);
-                                                                        window.removeEventListener('message', messageHandler);
-                                                                        window.location.reload();
+                                                                        // Token was saved! Update the form
+                                                                        console.log('Refresh token detected via polling, updating form...');
+                                                                        handleTokenDetected();
                                                                     }
                                                                 }
                                                             } catch (e) {
@@ -462,7 +585,10 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                                         
                                                         // Cleanup after 2 minutes to prevent memory leaks
                                                         setTimeout(() => {
-                                                            clearInterval(checkTokenSaved);
+                                                            if (checkTokenSaved) {
+                                                                clearInterval(checkTokenSaved);
+                                                                checkTokenSaved = null;
+                                                            }
                                                             window.removeEventListener('message', messageHandler);
                                                         }, 120000);
                                                     } else {
@@ -470,7 +596,8 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                                         alert(`Failed to get OAuth URL: ${error.error}`);
                                                     }
                                                 } catch (error: any) {
-                                                    alert(`Failed: ${error.message}`);
+                                                    console.error('OAuth URL fetch error:', error);
+                                                    alert(`Failed to get OAuth URL: ${error.message || 'Unknown error'}`);
                                                 }
                                             }}
                                         >
@@ -531,7 +658,7 @@ export function CloudStorageModal({ isOpen, onClose, onSuccess, existingConfig }
                                             ) : (
                                                 <AlertTriangle className="w-4 h-4" />
                                             )}
-                                            <span className="text-sm">{testResult.message}</span>
+                                            <div className="text-sm">{testResult.message}</div>
                                         </div>
                                     )}
                                 </div>

@@ -3,7 +3,7 @@
 > BACKEND_PORT=${PORT:-3010} vite
 
 
-  VITE v5.4.21  ready in 257 ms
+  VITE v5.4.21  ready in 6394 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://10.240.150.158:5173/

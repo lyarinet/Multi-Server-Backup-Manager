@@ -28,11 +28,19 @@ export class GoogleDriveService {
             console.log('Drive authentication successful');
         }
         catch (error) {
-            console.error('Drive authentication error:', error.message, error.code);
-            if (error.code === 401 || error.message.includes('invalid_grant')) {
-                throw new Error('Invalid refresh token. Please regenerate it using the OAuth flow.');
+            console.error('Drive authentication error:', error.message, error.code, error.response?.data);
+            // Check for various invalid token error codes and messages
+            const isInvalidToken = error.code === 401 ||
+                error.code === 400 ||
+                error.message?.includes('invalid_grant') ||
+                error.message?.includes('invalid_token') ||
+                error.message?.includes('Token has been expired or revoked') ||
+                error.response?.data?.error === 'invalid_grant' ||
+                error.response?.data?.error === 'invalid_token';
+            if (isInvalidToken) {
+                throw new Error('Invalid refresh token. Please regenerate it using the OAuth flow by clicking "Get via OAuth" button.');
             }
-            throw new Error(`Drive authentication failed: ${error.message}`);
+            throw new Error(`Drive authentication failed: ${error.message || 'Unknown error'}`);
         }
     }
     /**

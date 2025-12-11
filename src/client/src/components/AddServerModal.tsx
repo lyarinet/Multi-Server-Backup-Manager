@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { X, Check } from 'lucide-react';
 import { DirectoryBrowserModal } from './DirectoryBrowserModal';
@@ -32,118 +32,24 @@ export function AddServerModal({ isOpen, onClose, onSuccess }: AddServerModalPro
         backupDb: true,
     });
     const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
-    const [enableSchedule, setEnableSchedule] = useState(false);
-    const [scheduleType, setScheduleType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
-    const [scheduleTime, setScheduleTime] = useState('02:00');
-    const [scheduleDay, setScheduleDay] = useState<number | undefined>(undefined);
-    const [customCron, setCustomCron] = useState('');
-    const [scheduleName, setScheduleName] = useState('');
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            // Reset schedule name when form data changes
-            if (formData.name) {
-                setScheduleName(`${formData.name} - Scheduled Backup`);
-            }
-        }
-    }, [formData.name, isOpen]);
 
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
-        
-        // Validate schedule fields if enabled
-        if (enableSchedule) {
-            if (!scheduleName.trim()) {
-                setError('Schedule name is required when scheduling is enabled');
-                setLoading(false);
-                return;
-            }
-            if (scheduleType === 'custom' && !customCron.trim()) {
-                setError('Custom cron expression is required');
-                setLoading(false);
-                return;
-            }
-        }
-        
         try {
             const res = await fetch('/api/servers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-            
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ error: `Failed to add server: ${res.status} ${res.statusText}` }));
-                throw new Error(errorData.error || `Failed to add server: ${res.status}`);
-            }
-            
-            const newServer = await res.json();
-            
-            // Create cron job if schedule is enabled
-            let scheduleError = null;
-            if (enableSchedule && scheduleName.trim()) {
-                try {
-                    const cronPayload: any = {
-                        name: scheduleName.trim(),
-                        serverId: newServer.id,
-                        scheduleType,
-                        enabled: true,
-                    };
-
-                    if (scheduleType === 'custom') {
-                        if (!customCron.trim()) {
-                            scheduleError = 'Custom cron expression is required';
-                        } else {
-                            cronPayload.schedule = customCron.trim();
-                        }
-                    } else {
-                        cronPayload.scheduleTime = scheduleTime;
-                        if (scheduleType === 'weekly' || scheduleType === 'monthly') {
-                            cronPayload.scheduleDay = scheduleDay;
-                        }
-                    }
-
-                    if (!scheduleError) {
-                        console.log('Creating cron job with payload:', cronPayload);
-                        const cronRes = await fetch('/api/cron-jobs', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(cronPayload),
-                        });
-
-                        const cronResponseData = await cronRes.json().catch(() => ({}));
-                        console.log('Cron job creation response:', cronRes.status, cronResponseData);
-
-                        if (!cronRes.ok) {
-                            scheduleError = `Server added successfully, but schedule creation failed: ${cronResponseData.error || cronResponseData.details || 'Unknown error'}`;
-                        } else {
-                            console.log('Schedule created successfully:', cronResponseData);
-                            // Verify the schedule was actually created
-                            if (!cronResponseData.id) {
-                                scheduleError = 'Schedule creation response was invalid - schedule may not have been saved';
-                            }
-                        }
-                    }
-                } catch (scheduleErr: any) {
-                    console.error('Error creating schedule:', scheduleErr);
-                    scheduleError = `Server added successfully, but schedule creation failed: ${scheduleErr.message || 'Unknown error'}`;
-                }
-            }
-            
-            if (scheduleError) {
-                setError(scheduleError);
-            } else {
+            if (res.ok) {
                 onSuccess();
                 onClose();
             }
-        } catch (error: any) {
-            console.error('Error adding server:', error);
-            setError(error.message || 'Failed to add server. Please try again.');
+        } catch (error) {
+            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -158,12 +64,6 @@ export function AddServerModal({ isOpen, onClose, onSuccess }: AddServerModalPro
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-
-                {error && (
-                    <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
-                        {error}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Basic Information */}
@@ -409,119 +309,6 @@ export function AddServerModal({ isOpen, onClose, onSuccess }: AddServerModalPro
                             password: formData.password || undefined,
                         }}
                     />
-
-                    {/* Schedule Backup */}
-                    <div className="space-y-4 border border-border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div>
-                                <h3 className="font-semibold text-lg">Schedule Backup</h3>
-                                <p className="text-sm text-muted-foreground -mt-1">Optionally create an automated backup schedule for this server</p>
-                            </div>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={enableSchedule}
-                                    onChange={(e) => setEnableSchedule(e.target.checked)}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm font-medium">Enable Schedule</span>
-                            </label>
-                        </div>
-
-                        {enableSchedule && (
-                            <div className="space-y-4 pt-2">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Schedule Name</label>
-                                    <input
-                                        type="text"
-                                        required={enableSchedule}
-                                        value={scheduleName}
-                                        onChange={(e) => setScheduleName(e.target.value)}
-                                        className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                        placeholder="e.g., Daily Backup at 2 AM"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Schedule Type</label>
-                                    <select
-                                        value={scheduleType}
-                                        onChange={(e) => setScheduleType(e.target.value as any)}
-                                        className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                    >
-                                        <option value="daily">Daily</option>
-                                        <option value="weekly">Weekly</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="custom">Custom Cron Expression</option>
-                                    </select>
-                                </div>
-
-                                {scheduleType === 'custom' ? (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Cron Expression</label>
-                                        <input
-                                            type="text"
-                                            required={enableSchedule && scheduleType === 'custom'}
-                                            value={customCron}
-                                            onChange={(e) => setCustomCron(e.target.value)}
-                                            className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
-                                            placeholder="0 2 * * * (minute hour day month dayOfWeek)"
-                                        />
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            Format: minute hour day month dayOfWeek (e.g., "0 2 * * *" for daily at 2 AM)
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Time</label>
-                                            <input
-                                                type="time"
-                                                required={enableSchedule}
-                                                value={scheduleTime}
-                                                onChange={(e) => setScheduleTime(e.target.value)}
-                                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                            />
-                                        </div>
-
-                                        {scheduleType === 'weekly' && (
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Day of Week</label>
-                                                <select
-                                                    value={scheduleDay || 0}
-                                                    onChange={(e) => setScheduleDay(parseInt(e.target.value))}
-                                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                                >
-                                                    <option value={0}>Sunday</option>
-                                                    <option value={1}>Monday</option>
-                                                    <option value={2}>Tuesday</option>
-                                                    <option value={3}>Wednesday</option>
-                                                    <option value={4}>Thursday</option>
-                                                    <option value={5}>Friday</option>
-                                                    <option value={6}>Saturday</option>
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {scheduleType === 'monthly' && (
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Day of Month</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="31"
-                                                    required={enableSchedule && scheduleType === 'monthly'}
-                                                    value={scheduleDay || 1}
-                                                    onChange={(e) => setScheduleDay(parseInt(e.target.value))}
-                                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                                />
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
 
                     <div className="flex justify-end gap-2 pt-4">
                         <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>

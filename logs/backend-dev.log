@@ -12,26 +12,208 @@ Server running at http://localhost:3010
 [Cron] Loading cron jobs from database...
 [Cron] Stopped all jobs
 [Cron] Scheduled job 1 (daily backup 2 AM) with expression: 27 12 * * * (timezone: Asia/Karachi)
-[Cron] Scheduled job 5 (Daily 11) with expression: 59 23 * * * (timezone: Asia/Karachi)
-[Cron] Scheduled job 6 (local backups - Scheduled Backup) with expression: 37 12 * * * (timezone: Asia/Karachi)
-[Cron] Scheduled job 7 (local backups - Scheduled Backup) with expression: 0 2 * * * (timezone: Asia/Karachi)
-[Cron] Loaded 4 cron job(s)
-[Cron] Stopped job 6
-[Cron] Stopped job 7
-[Cron] Scheduled job 8 (local backups - Scheduled Backup) with expression: 0 2 * * * (timezone: Asia/Karachi)
-[Cron] Scheduled job 9 (xTerminal - Scheduled Backup) with expression: 0 2 * * * (timezone: Asia/Karachi)
-[Cron] Stopped job 9
-[Cron] Stopped job 8
-[Cron] Scheduled job 8 (local backups - Scheduled Backup) with expression: 47 12 * * * (timezone: Asia/Karachi)
-[Cron] Executing backup job 8 for server 3
+[Cron] Loaded 1 cron job(s)
+Drive test - Config check: {
+  hasClientId: true,
+  hasClientSecret: true,
+  hasRefreshToken: true,
+  refreshTokenLength: 103
+}
+Initializing Drive service with refresh token length: 103
+Drive authentication successful
+Saving settings: {
+  hasGlobalPath: false,
+  hasDriveClientId: true,
+  hasDriveClientSecret: true,
+  hasDriveRefreshToken: true,
+  refreshTokenLength: 103,
+  hasDriveFolderId: false,
+  driveAutoUpload: true
+}
+Settings updated successfully
+[Cron] Scheduled job 4 (tre) with expression: 17 20 * * * (timezone: Asia/Karachi)
+[Cron] Executing backup job 4 for server all
+[Backup 81] Using server-specific local backup path: /opt/backup
+[Backup 82] Using server-specific local backup path: /opt/backup
+[Cron] Backup job 4 completed successfully
+[Backup 81] Starting backup process...
+[Backup 81] Creating remote directory: /tmp/backup_2025-12-11_xTerminal
+[Backup 82] Starting backup process...
+[Backup 82] Creating remote directory: /tmp/backup_2025-12-11_local_backups
+[Backup 81] Compressing /var/www...
+[Backup 81] STDERR: tar: 
+[Backup 81] STDERR: Removing leading `/' from member names
+
+[Backup 82] Skipping /var/www backup
+[Backup 82] Skipping /var/log backup
+[Backup 82] Skipping /etc/nginx backup
+[Backup 82] Compressing /var/www/html/backup/bk...
+[Backup 82] STDERR: tar: Removing leading `/' from member names
+
+[Backup 82] Dumping all databases...
+[Backup 82] STDERR: mysqldump: [Warning] Using a password on the command line interface can be insecure.
+
+[Backup 81] Compressing /var/log...
+[Backup 81] STDERR: tar: Removing leading `/' from member names
+
+[Backup 82] STDERR: mysqldump: Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces
+
+[Backup 82] Rsyncing to local: /opt/backup/backup_2025-12-11_local_backups
+[Backup 82] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.158:/tmp/backup_2025-12-11_local_backups/ /opt/backup/backup_2025-12-11_local_backups/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 82] Rsync failed, falling back to SFTP
+[Backup 82] Starting SFTP transfer from /tmp/backup_2025-12-11_local_backups to /opt/backup/backup_2025-12-11_local_backups
+[Backup 82] SFTP Connection ready
+[Backup 82] Found 2 files to transfer via SFTP
+[Backup 82] SFTP downloading: local_backups_custom__var_www_html_backup_bk.tar.gz
+[Backup 82] SFTP downloading: local_backups_db-dump-all.sql
+[Backup 82] SFTP transfer completed successfully
+[Backup 82] Cleaning up remote files...
+[Backup 82] Backup completed successfully.
+[Backup 82] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 82] Drive target folder: root
+Drive authentication successful
+[Backup 81] Compressing /etc/nginx...
+[Backup 81] STDERR: tar: Removing leading `/' from member names
+
+[Backup 81] Compressing /var/www/html/xTerminal...
+[Backup 81] STDERR: tar: Removing leading `/' from member names
+
+[Cron] Executing backup job 4 for server all
+[Backup 83] Using server-specific local backup path: /opt/backup
+[Backup 84] Using server-specific local backup path: /opt/backup
+[Cron] Backup job 4 completed successfully
+[Backup 83] Starting backup process...
+[Backup 83] Creating remote directory: /tmp/backup_2025-12-11_xTerminal
+[Backup 84] Starting backup process...
+[Backup 84] Creating remote directory: /tmp/backup_2025-12-11_local_backups
+[Backup 84] Skipping /var/www backup
+[Backup 84] Skipping /var/log backup
+[Backup 84] Skipping /etc/nginx backup
+[Backup 84] Compressing /var/www/html/backup/bk...
+[Backup 83] Compressing /var/www...
+[Backup 83] STDERR: tar: Removing leading `/' from member names
+
+[Backup 84] STDERR: tar: Removing leading `/' from member names
+
+[Backup 84] STDERR: tar: /var/www/html/backup/bk/sqlite.db-journal: File removed before we read it
+
+[Backup 84] Backup failed: Command failed with code 1
+Error: Command failed with code 1
+    at Channel.<anonymous> (/var/www/html/backup/bk/src/server/backup.ts:58:36)
+    at Channel.emit (node:events:529:35)
+    at doClose (/var/www/html/backup/bk/node_modules/ssh2/lib/utils.js:101:21)
+    at onCHANNEL_CLOSE (/var/www/html/backup/bk/node_modules/ssh2/lib/utils.js:108:7)
+    at CHANNEL_CLOSE (/var/www/html/backup/bk/node_modules/ssh2/lib/client.js:703:11)
+    at 97 (/var/www/html/backup/bk/node_modules/ssh2/lib/protocol/handlers.misc.js:999:16)
+    at Protocol.onPayload (/var/www/html/backup/bk/node_modules/ssh2/lib/protocol/Protocol.js:2059:10)
+    at AESGCMDecipherBinding.decrypt (/var/www/html/backup/bk/node_modules/ssh2/lib/protocol/crypto.js:1086:26)
+    at Protocol.parsePacket [as _parse] (/var/www/html/backup/bk/node_modules/ssh2/lib/protocol/Protocol.js:2028:25)
+    at Protocol.parse (/var/www/html/backup/bk/node_modules/ssh2/lib/protocol/Protocol.js:313:16)
+[Backup 81] Dumping selected databases: xTerminal
+[Backup 81] DEBUG: dbSelected array: ["xTerminal"]
+[Backup 81] Dumping database: xTerminal
+[Backup 81] DEBUG: Executing mysqldump for xTerminal
+[Backup 81] Rsyncing to local: /opt/backup/backup_2025-12-11_xTerminal
+[Backup 81] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.156:/tmp/backup_2025-12-11_xTerminal/ /opt/backup/backup_2025-12-11_xTerminal/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 81] Rsync failed, falling back to SFTP
+[Backup 81] Starting SFTP transfer from /tmp/backup_2025-12-11_xTerminal to /opt/backup/backup_2025-12-11_xTerminal
+[Backup 81] SFTP Connection ready
+[Backup 81] Found 5 files to transfer via SFTP
+[Backup 81] SFTP downloading: xTerminal_nginx_bak.tar.gz
+[Backup 81] SFTP downloading: xTerminal_www_bak.tar.gz
+[Backup 81] SFTP downloading: xTerminal_db-xTerminal.sql
+[Backup 81] SFTP downloading: xTerminal_logs_bak.tar.gz
+[Backup 81] SFTP downloading: xTerminal_custom__var_www_html_xTerminal.tar.gz
+[Backup 81] SFTP transfer completed successfully
+[Backup 81] Cleaning up remote files...
+[Backup 81] Backup completed successfully.
+[Backup 81] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 81] Drive target folder: root
+[Backup 83] Compressing /var/log...
+[Backup 83] STDERR: tar: Removing leading `/' from member names
+tar (child): /tmp/backup_2025-12-11_xTerminal/xTerminal_logs_bak.tar.gz: Cannot open: No such file or directory
+tar (child): Error is not recoverable: exiting now
+
+[Backup 83] STDERR: tar: /tmp/backup_2025-12-11_xTerminal/xTerminal_logs_bak.tar.gz: Cannot write: Broken pipe
+tar: Child returned status 2
+
+[Backup 83] STDERR: tar: Error is not recoverable: exiting now
+
+[Backup 83] Backup failed: Command failed with code 2
+Error: Command failed with code 2
+    at Channel.<anonymous> (/var/www/html/backup/bk/src/server/backup.ts:58:36)
+    at Channel.emit (node:events:529:35)
+    at Channel.doClose (/var/www/html/backup/bk/node_modules/ssh2/lib/utils.js:101:21)
+    at Object.onceWrapper (node:events:631:28)
+    at Channel.emit (node:events:529:35)
+    at endReadableNT (node:internal/streams/readable:1400:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+Drive authentication successful
+[Backup 82] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 82] Found 2 top-level entries to upload from /opt/backup/backup_2025-12-11_local_backups
+Drive authentication successful
+Drive authentication successful
+[Backup 81] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 81] Found 5 top-level entries to upload from /opt/backup/backup_2025-12-11_xTerminal
+Drive authentication successful
+Drive authentication successful
+[Backup 81] Drive upload 1/5: xTerminal_custom__var_www_html_xTerminal.tar.gz
+Drive authentication successful
+[Backup 81] Drive upload 2/5: xTerminal_db-xTerminal.sql
+Drive authentication successful
+[Backup 81] Drive upload 3/5: xTerminal_logs_bak.tar.gz
+Drive authentication successful
+[Backup 81] Drive upload 4/5: xTerminal_nginx_bak.tar.gz
+Drive authentication successful
+[Cron] Stopped job 4
+[Backup 82] Google Drive auto-upload failed: Failed to create folder: request to https://www.googleapis.com/drive/v3/files?fields=id%2Cname%2Cparents failed, reason: connect ETIMEDOUT 216.58.209.138:443
+[Cron] Scheduled job 5 (test) with expression: 23 20 * * * (timezone: Asia/Karachi)
+Failed to upload xTerminal_nginx_bak.tar.gz: Error: Failed to upload file: request to https://www.googleapis.com/upload/drive/v3/files?fields=id%2Cname%2CmimeType%2Csize%2CmodifiedTime%2Cparents%2CwebViewLink&uploadType=multipart failed, reason: connect ETIMEDOUT 216.58.209.138:443
+    at GoogleDriveService.uploadFile (/var/www/html/backup/bk/src/server/drive.ts:207:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GoogleDriveService.uploadDirectory (/var/www/html/backup/bk/src/server/drive.ts:298:34)
+    at BackupManager.run (/var/www/html/backup/bk/src/server/backup.ts:329:42)
+[Backup 81] Drive upload 5/5: xTerminal_www_bak.tar.gz
+Drive authentication successful
+Failed to upload xTerminal_www_bak.tar.gz: Error: ENOENT: no such file or directory, stat '/opt/backup/backup_2025-12-11_xTerminal/xTerminal_www_bak.tar.gz'
+    at statSync (node:fs:1688:3)
+    at GoogleDriveService.uploadFile (/var/www/html/backup/bk/src/server/drive.ts:169:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at GoogleDriveService.uploadDirectory (/var/www/html/backup/bk/src/server/drive.ts:298:34)
+    at BackupManager.run (/var/www/html/backup/bk/src/server/backup.ts:329:42) {
+  errno: -2,
+  syscall: 'stat',
+  code: 'ENOENT',
+  path: '/opt/backup/backup_2025-12-11_xTerminal/xTerminal_www_bak.tar.gz'
+}
+[Backup 81] Google Drive auto-upload completed successfully. Uploaded items: 4
+[Cron] Executing backup job 5 for server all
+[Backup 85] Using server-specific local backup path: /opt/backup
 [Backup 86] Using server-specific local backup path: /opt/backup
-[Cron] Backup job 8 completed successfully
+[Cron] Backup job 5 completed successfully
+[Backup 85] Starting backup process...
+[Backup 85] Creating remote directory: /tmp/backup_2025-12-11_xTerminal
 [Backup 86] Starting backup process...
 [Backup 86] Creating remote directory: /tmp/backup_2025-12-11_local_backups
+[Backup 85] Compressing /var/www...
 [Backup 86] Skipping /var/www backup
 [Backup 86] Skipping /var/log backup
 [Backup 86] Skipping /etc/nginx backup
 [Backup 86] Compressing /var/www/html/backup/bk...
+[Backup 85] STDERR: tar: Removing leading `/' from member names
+
 [Backup 86] STDERR: tar: Removing leading `/' from member names
 
 [Backup 86] Dumping all databases...
@@ -58,8 +240,225 @@ rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
 [Backup 86] Starting Google Drive auto-upload for backup directory...
 Initializing Drive service with refresh token length: 103
 [Backup 86] Drive target folder: root
-Drive authentication error: invalid_grant undefined
-[Backup 86] Google Drive auto-upload failed: Invalid refresh token. Please regenerate it using the OAuth flow.
+Drive authentication successful
+[Backup 86] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 86] Found 2 top-level entries to upload from /opt/backup/backup_2025-12-11_local_backups
+Drive authentication successful
+Drive authentication successful
+[Backup 85] Compressing /var/log...
+[Backup 85] STDERR: tar: Removing leading `/' from member names
+
+[Backup 85] Compressing /etc/nginx...
+[Backup 85] STDERR: tar: Removing leading `/' from member names
+
+[Backup 85] Compressing /var/www/html/xTerminal...
+[Backup 85] STDERR: tar: Removing leading `/' from member names
+
+[Backup 85] Dumping selected databases: xTerminal
+[Backup 85] DEBUG: dbSelected array: ["xTerminal"]
+[Backup 85] Dumping database: xTerminal
+[Backup 85] DEBUG: Executing mysqldump for xTerminal
+[Backup 85] Rsyncing to local: /opt/backup/backup_2025-12-11_xTerminal
+[Backup 85] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.156:/tmp/backup_2025-12-11_xTerminal/ /opt/backup/backup_2025-12-11_xTerminal/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 85] Rsync failed, falling back to SFTP
+[Backup 85] Starting SFTP transfer from /tmp/backup_2025-12-11_xTerminal to /opt/backup/backup_2025-12-11_xTerminal
+[Backup 85] SFTP Connection ready
+[Backup 85] Found 5 files to transfer via SFTP
+[Backup 85] SFTP downloading: xTerminal_nginx_bak.tar.gz
+[Backup 85] SFTP downloading: xTerminal_www_bak.tar.gz
+[Backup 85] SFTP downloading: xTerminal_db-xTerminal.sql
+[Backup 85] SFTP downloading: xTerminal_logs_bak.tar.gz
+[Backup 85] SFTP downloading: xTerminal_custom__var_www_html_xTerminal.tar.gz
+[Backup 85] SFTP transfer completed successfully
+[Backup 85] Cleaning up remote files...
+[Backup 85] Backup completed successfully.
+[Backup 85] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 85] Drive target folder: root
+Drive authentication successful
+[Backup 85] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 85] Found 5 top-level entries to upload from /opt/backup/backup_2025-12-11_xTerminal
+Drive authentication successful
+Drive authentication successful
+[Cron] Stopped job 1
+[Cron] Stopped job 5
+[Backup 86] Google Drive auto-upload failed: Failed to create folder: request to https://www.googleapis.com/drive/v3/files?fields=id%2Cname%2Cparents failed, reason: connect ETIMEDOUT 216.58.209.138:443
+[Cron] Scheduled job 6 (test) with expression: 26 20 * * * (timezone: Asia/Karachi)
+[Cron] Executing backup job 6 for server all
+[Backup 87] Using server-specific local backup path: /opt/backup
+[Backup 88] Using server-specific local backup path: /opt/backup
+[Cron] Backup job 6 completed successfully
+[Backup 87] Starting backup process...
+[Backup 87] Creating remote directory: /tmp/backup_2025-12-11_xTerminal
+[Backup 88] Starting backup process...
+[Backup 88] Creating remote directory: /tmp/backup_2025-12-11_local_backups
+[Backup 88] Skipping /var/www backup
+[Backup 88] Skipping /var/log backup
+[Backup 88] Skipping /etc/nginx backup
+[Backup 88] Compressing /var/www/html/backup/bk...
+[Backup 87] Compressing /var/www...
+[Backup 88] STDERR: tar: Removing leading `/' from member names
+
+[Backup 87] STDERR: tar: Removing leading `/' from member names
+
+[Backup 88] Dumping all databases...
+[Backup 88] STDERR: mysqldump: [Warning] Using a password on the command line interface can be insecure.
+
+[Backup 88] STDERR: mysqldump: Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces
+
+[Backup 88] Rsyncing to local: /opt/backup/backup_2025-12-11_local_backups
+[Backup 88] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.158:/tmp/backup_2025-12-11_local_backups/ /opt/backup/backup_2025-12-11_local_backups/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 88] Rsync failed, falling back to SFTP
+[Backup 88] Starting SFTP transfer from /tmp/backup_2025-12-11_local_backups to /opt/backup/backup_2025-12-11_local_backups
+[Backup 88] SFTP Connection ready
+[Backup 88] Found 2 files to transfer via SFTP
+[Backup 88] SFTP downloading: local_backups_custom__var_www_html_backup_bk.tar.gz
+[Backup 88] SFTP downloading: local_backups_db-dump-all.sql
+[Backup 88] SFTP transfer completed successfully
+[Backup 88] Cleaning up remote files...
+[Backup 88] Backup completed successfully.
+[Backup 88] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 88] Drive target folder: root
+Drive authentication successful
+[Backup 88] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 88] Found 2 top-level entries to upload from /opt/backup/backup_2025-12-11_local_backups
+Drive authentication successful
+Drive authentication successful
+[Backup 88] Drive upload 1/2: local_backups_custom__var_www_html_backup_bk.tar.gz
+Drive authentication successful
+[Backup 87] Compressing /var/log...
+[Backup 87] STDERR: tar: Removing leading `/' from member names
+
+[Backup 88] Drive upload 2/2: local_backups_db-dump-all.sql
+Drive authentication successful
+[Backup 85] Google Drive auto-upload failed: Failed to create folder: request to https://www.googleapis.com/drive/v3/files?fields=id%2Cname%2Cparents failed, reason: connect ETIMEDOUT 172.217.169.234:443
+[Backup 88] Google Drive auto-upload completed successfully. Uploaded items: 3
+[Backup 87] Compressing /etc/nginx...
+[Backup 87] STDERR: tar: Removing leading `/' from member names
+
+[Backup 87] Compressing /var/www/html/xTerminal...
+[Backup 87] STDERR: tar: Removing leading `/' from member names
+
+[Cron] Executing backup job 6 for server all
+[Backup 89] Using server-specific local backup path: /opt/backup
+[Backup 90] Using server-specific local backup path: /opt/backup
+[Cron] Backup job 6 completed successfully
+[Backup 89] Starting backup process...
+[Backup 89] Creating remote directory: /tmp/backup_2025-12-11_xTerminal
+[Backup 90] Starting backup process...
+[Backup 90] Creating remote directory: /tmp/backup_2025-12-11_local_backups
+[Backup 89] Compressing /var/www...
+[Backup 90] Skipping /var/www backup
+[Backup 90] Skipping /var/log backup
+[Backup 90] Skipping /etc/nginx backup
+[Backup 90] Compressing /var/www/html/backup/bk...
+[Backup 89] STDERR: tar: Removing leading `/' from member names
+
+[Backup 90] STDERR: tar: Removing leading `/' from member names
+
+[Backup 90] Dumping all databases...
+[Backup 90] STDERR: mysqldump: [Warning] Using a password on the command line interface can be insecure.
+
+[Backup 90] STDERR: mysqldump: Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces
+
+[Backup 90] Rsyncing to local: /opt/backup/backup_2025-12-11_local_backups
+[Backup 90] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.158:/tmp/backup_2025-12-11_local_backups/ /opt/backup/backup_2025-12-11_local_backups/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 90] Rsync failed, falling back to SFTP
+[Backup 90] Starting SFTP transfer from /tmp/backup_2025-12-11_local_backups to /opt/backup/backup_2025-12-11_local_backups
+[Backup 90] SFTP Connection ready
+[Backup 90] Found 2 files to transfer via SFTP
+[Backup 90] SFTP downloading: local_backups_custom__var_www_html_backup_bk.tar.gz
+[Backup 90] SFTP downloading: local_backups_db-dump-all.sql
+[Backup 90] SFTP transfer completed successfully
+[Backup 90] Cleaning up remote files...
+[Backup 87] Dumping selected databases: xTerminal
+[Backup 87] DEBUG: dbSelected array: ["xTerminal"]
+[Backup 87] Dumping database: xTerminal
+[Backup 87] DEBUG: Executing mysqldump for xTerminal
+[Backup 90] Backup completed successfully.
+[Backup 90] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 90] Drive target folder: root
+[Backup 87] Rsyncing to local: /opt/backup/backup_2025-12-11_xTerminal
+[Backup 87] Local Error: Command failed: rsync -az --partial -e "sshpass -p '@dminkaka' ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p 22" root@10.240.150.156:/tmp/backup_2025-12-11_xTerminal/ /opt/backup/backup_2025-12-11_xTerminal/
+rsync: [Receiver] Failed to exec sshpass: No such file or directory (2)
+rsync error: error in IPC code (code 14) at pipe.c(85) [Receiver=3.2.7]
+rsync: connection unexpectedly closed (0 bytes received so far) [Receiver]
+rsync error: error in IPC code (code 14) at io.c(232) [Receiver=3.2.7]
+
+[Backup 87] Rsync failed, falling back to SFTP
+[Backup 87] Starting SFTP transfer from /tmp/backup_2025-12-11_xTerminal to /opt/backup/backup_2025-12-11_xTerminal
+[Backup 87] SFTP Connection ready
+[Backup 87] Found 5 files to transfer via SFTP
+[Backup 87] SFTP downloading: xTerminal_nginx_bak.tar.gz
+Drive authentication successful
+[Backup 87] SFTP downloading: xTerminal_www_bak.tar.gz
+[Backup 87] SFTP downloading: xTerminal_db-xTerminal.sql
+[Backup 87] SFTP downloading: xTerminal_logs_bak.tar.gz
+[Backup 90] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 90] Found 2 top-level entries to upload from /opt/backup/backup_2025-12-11_local_backups
+Drive authentication successful
+Drive authentication successful
+[Backup 87] SFTP downloading: xTerminal_custom__var_www_html_xTerminal.tar.gz
+[Backup 87] SFTP transfer completed successfully
+[Backup 87] Cleaning up remote files...
+[Backup 90] Drive upload 1/2: local_backups_custom__var_www_html_backup_bk.tar.gz
+Drive authentication successful
+[Backup 87] Backup completed successfully.
+[Backup 87] Starting Google Drive auto-upload for backup directory...
+Initializing Drive service with refresh token length: 103
+[Backup 87] Drive target folder: root
+Drive authentication successful
+[Backup 87] Using yearly Drive folder: ServerBackups_2025 (1QFA3LAamCNpM4Ep-BOyO7MSPDchUdCgm)
+[Backup 87] Found 5 top-level entries to upload from /opt/backup/backup_2025-12-11_xTerminal
+Drive authentication successful
+Drive authentication successful
+[Backup 89] Compressing /var/log...
+[Backup 89] STDERR: tar: Removing leading `/' from member names
+tar (child): /tmp/backup_2025-12-11_xTerminal/xTerminal_logs_bak.tar.gz: Cannot open: No such file or directory
+tar (child): Error is not recoverable: exiting now
+
+[Backup 89] STDERR: tar: /tmp/backup_2025-12-11_xTerminal/xTerminal_logs_bak.tar.gz: Cannot write: Broken pipe
+
+[Backup 89] STDERR: tar: Child returned status 2
+tar: Error is not recoverable: exiting now
+
+[Backup 89] Backup failed: Command failed with code 2
+Error: Command failed with code 2
+    at Channel.<anonymous> (/var/www/html/backup/bk/src/server/backup.ts:58:36)
+    at Channel.emit (node:events:529:35)
+    at Channel.doClose (/var/www/html/backup/bk/node_modules/ssh2/lib/utils.js:101:21)
+    at Object.onceWrapper (node:events:631:28)
+    at Channel.emit (node:events:529:35)
+    at endReadableNT (node:internal/streams/readable:1400:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[Backup 87] Drive upload 1/5: xTerminal_custom__var_www_html_xTerminal.tar.gz
+Drive authentication successful
+[Backup 90] Drive upload 2/2: local_backups_db-dump-all.sql
+Drive authentication successful
+[Backup 90] Google Drive auto-upload completed successfully. Uploaded items: 3
+[Backup 87] Drive upload 2/5: xTerminal_db-xTerminal.sql
+Drive authentication successful
+[Backup 87] Drive upload 3/5: xTerminal_logs_bak.tar.gz
+Drive authentication successful
+[Backup 87] Drive upload 4/5: xTerminal_nginx_bak.tar.gz
+Drive authentication successful
 Saving settings: {
   hasGlobalPath: false,
   hasDriveClientId: true,

@@ -46,6 +46,18 @@ app.use(cors({
 app.use(express.json());
 app.set('trust proxy', true);
 
+// CRITICAL: Register OAuth callback route VERY EARLY, before any other routes
+// This ensures it's matched before static file middleware or catch-all routes
+app.all('/oauth_callback', (req, res, next) => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:51',message:'Early OAuth middleware - setting flag',data:{path:req.path,url:req.url,method:req.method},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+    // #endregion
+    // Set flag immediately to prevent static file middleware from running
+    res.locals.oauthCallback = true;
+    // Continue to the actual route handler
+    next();
+});
+
 // IP Whitelist middleware - must be before routes but after express.json
 // Note: Login/register routes are excluded in the middleware itself
 const ipWhitelistMiddleware = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -663,11 +675,58 @@ app.get('/api/local/browse', authMiddleware, async (req, res) => {
 });
 
 // OAuth callback handler - MUST be before static file serving
-app.get('/oauth_callback', async (req, res) => {
+// This route MUST be defined before any static file serving middleware
+// IMPORTANT: This route must be registered BEFORE any app.use() or app.get('*') routes
+// OAuth callback route - MUST be before any other routes that could match
+// Using app.all() to catch all HTTP methods, and checking path explicitly
+// Note: A middleware above already set res.locals.oauthCallback = true
+app.all('/oauth_callback', async (req, res) => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:680',message:'OAuth callback route handler ENTRY',data:{path:req.path,url:req.url,method:req.method,hasCode:!!req.query.code,hasError:!!req.query.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     try {
-        const { code, error } = req.query;
+        // CRITICAL: Set headers IMMEDIATELY to prevent React app from loading
+        // Do this before ANY other code, including console.log
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        
+        // Mark that we're handling this request - this prevents static middleware from running
+        res.locals.oauthCallback = true;
+        
+        // #region agent log
+        fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:691',message:'Headers set, oauthCallback flag set',data:{headersSent:res.headersSent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Log immediately to verify route is being hit
+        console.log('=== OAuth callback route EXECUTING ===');
+        console.log('Route matched! Path:', req.path, 'URL:', req.url, 'Method:', req.method);
+        console.log('Query params:', Object.keys(req.query));
+    console.log('OAuth callback received:', {
+        code: req.query.code ? 'present' : 'missing',
+        error: req.query.error || 'none',
+        query: Object.keys(req.query),
+        url: req.url,
+        method: req.method,
+        path: req.path,
+        originalUrl: req.originalUrl,
+        headers: {
+            'user-agent': req.get('user-agent'),
+            'referer': req.get('referer')
+        }
+    });
+    
+    // Main OAuth callback logic (no inner try needed - outer try will catch all errors)
+    const { code, error } = req.query;
+    
+    // #region agent log
+    fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:712',message:'Extracted query params',data:{hasCode:!!code,hasError:!!error,codeLength:code?String(code).length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
         
         if (error) {
+            console.error('OAuth error received:', error);
             return res.send(`
                 <html>
                     <head><title>OAuth Error</title></head>
@@ -695,12 +754,28 @@ app.get('/oauth_callback', async (req, res) => {
         }
         
         if (!code) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(400).send('Missing authorization code');
+        }
+
+        // Ensure code is a string and trim it
+        const authCode = String(code).trim();
+        if (!authCode || authCode.length < 10) {
+            console.error('Invalid authorization code received:', { code, type: typeof code, length: authCode?.length });
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.status(400).send(`Invalid authorization code. Code length: ${authCode?.length || 0}`);
         }
 
         const set = await db.select().from(settings).limit(1);
         const cfg = set[0] as any;
+        // #region agent log
+        fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:755',message:'Database query completed',data:{hasConfig:!!cfg,hasClientId:!!cfg?.driveClientId,hasClientSecret:!!cfg?.driveClientSecret},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         if (!cfg?.driveClientId || !cfg?.driveClientSecret) {
+            // #region agent log
+            fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:758',message:'Drive not configured error',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(400).send('Drive not configured');
         }
 
@@ -709,20 +784,199 @@ app.get('/oauth_callback', async (req, res) => {
         // Hardcode the redirect URI to match exactly what's in Google Cloud Console
         const redirectUri = 'https://bk.lyarinet.com/oauth_callback';
         
+        console.log('Creating OAuth2Client with:', {
+            clientId: cfg.driveClientId?.substring(0, 30) + '...',
+            hasClientSecret: !!cfg.driveClientSecret,
+            redirectUri: redirectUri,
+            codeLength: authCode.length
+        });
+        
         const oauth2Client = new google.auth.OAuth2(
             cfg.driveClientId,
             cfg.driveClientSecret,
             redirectUri
         );
 
-        const { tokens } = await oauth2Client.getToken(code as string);
-        
-        console.log('OAuth tokens received:', {
-            hasAccessToken: !!tokens.access_token,
-            hasRefreshToken: !!tokens.refresh_token,
-            tokenType: tokens.token_type,
-            expiryDate: tokens.expiry_date,
-        });
+        let tokens;
+        try {
+            // Log the code being used (first 20 chars only for security)
+            const codePreview = authCode?.substring(0, 20) || 'missing';
+            console.log('Attempting token exchange with code:', codePreview + '...', 'Length:', authCode?.length || 0);
+            console.log('OAuth2Client config:', {
+                clientId: cfg.driveClientId?.substring(0, 20) + '...',
+                hasClientSecret: !!cfg.driveClientSecret,
+                redirectUri: redirectUri
+            });
+            
+            const tokenResponse = await oauth2Client.getToken(authCode);
+            tokens = tokenResponse.tokens;
+            
+            // #region agent log
+            fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:791',message:'Token exchange SUCCESS',data:{hasAccessToken:!!tokens.access_token,hasRefreshToken:!!tokens.refresh_token,refreshTokenLength:tokens.refresh_token?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            
+            console.log('OAuth tokens received:', {
+                hasAccessToken: !!tokens.access_token,
+                hasRefreshToken: !!tokens.refresh_token,
+                tokenType: tokens.token_type,
+                expiryDate: tokens.expiry_date,
+            });
+        } catch (tokenError: any) {
+            // #region agent log
+            fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:800',message:'Token exchange ERROR',data:{message:tokenError.message,code:tokenError.code,status:tokenError.response?.status,error:tokenError.response?.data?.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            // Extract detailed error information
+            const errorDetails = {
+                message: tokenError.message || 'Unknown error',
+                code: tokenError.code,
+                status: tokenError.response?.status,
+                data: tokenError.response?.data,
+                error: tokenError.response?.data?.error,
+                error_description: tokenError.response?.data?.error_description
+            };
+            
+            console.error('Token exchange error:', errorDetails);
+            console.error('Full error object:', {
+                message: tokenError.message,
+                code: tokenError.code,
+                response: tokenError.response?.data,
+                status: tokenError.response?.status,
+                stack: tokenError.stack?.split('\n').slice(0, 5).join('\n')
+            });
+            
+            // Format error details for display
+            let errorDisplay = errorDetails.message;
+            if (errorDetails.error_description) {
+                errorDisplay += `: ${errorDetails.error_description}`;
+            }
+            if (errorDetails.error) {
+                errorDisplay += ` (${errorDetails.error})`;
+            }
+            
+            const errorDetailsJson = errorDetails.data ? JSON.stringify(errorDetails.data, null, 2) : '';
+            
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            return res.send(`
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>OAuth Token Exchange Error</title>
+                        <meta charset="UTF-8">
+                        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                        <style>
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                padding: 40px;
+                                text-align: center;
+                                background: #1a1a1a;
+                                color: #ffffff;
+                                margin: 0;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 100vh;
+                            }
+                            .container {
+                                background: #2a2a2a;
+                                border-radius: 12px;
+                                padding: 40px;
+                                max-width: 700px;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                            }
+                            h1 {
+                                color: #f87171;
+                                margin-bottom: 20px;
+                                font-size: 24px;
+                            }
+                            p {
+                                color: #d1d5db;
+                                margin: 10px 0;
+                                line-height: 1.6;
+                                text-align: left;
+                            }
+                            code {
+                                background: #374151;
+                                padding: 2px 6px;
+                                border-radius: 4px;
+                                font-family: monospace;
+                            }
+                            .error-details {
+                                background: #1f2937;
+                                border: 1px solid #374151;
+                                border-radius: 8px;
+                                padding: 15px;
+                                margin: 15px 0;
+                                text-align: left;
+                                overflow-x: auto;
+                                max-height: 300px;
+                                overflow-y: auto;
+                            }
+                            .error-details pre {
+                                margin: 0;
+                                color: #fca5a5;
+                                font-size: 12px;
+                                white-space: pre-wrap;
+                                word-break: break-all;
+                            }
+                            button {
+                                background: #3b82f6;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 16px;
+                                margin-top: 20px;
+                            }
+                            button:hover {
+                                background: #2563eb;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>❌ Token Exchange Failed</h1>
+                            <p><strong>Error:</strong> ${errorDisplay}</p>
+                            ${errorDetailsJson ? `<div class="error-details"><strong>Error Details:</strong><pre>${errorDetailsJson}</pre></div>` : ''}
+                            ${errorDetails.status ? `<p><strong>HTTP Status:</strong> ${errorDetails.status}</p>` : ''}
+                            <p>This usually means:</p>
+                            <ol style="text-align: left; margin: 20px 0;">
+                                <li>The redirect URI <code>https://bk.lyarinet.com/oauth_callback</code> is not configured in your Client ID</li>
+                                <li>The Client ID or Client Secret is incorrect</li>
+                                <li>The authorization code has expired (codes expire quickly, usually within 1 minute)</li>
+                                <li>The authorization code was already used</li>
+                            </ol>
+                            <p><strong>Solution:</strong></p>
+                            <ol style="text-align: left; margin: 20px 0;">
+                                <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #60a5fa;">Google Cloud Console → Credentials</a></li>
+                                <li>Click your OAuth 2.0 Client ID: <code>${cfg.driveClientId}</code></li>
+                                <li>In "Authorized redirect URIs", add exactly: <code>https://bk.lyarinet.com/oauth_callback</code></li>
+                                <li>Click "Save" and wait 1-2 minutes</li>
+                                <li>Click "Get via OAuth" again (codes expire quickly, so get a fresh one)</li>
+                            </ol>
+                            <button onclick="window.close()">Close Window</button>
+                        </div>
+                        <script>
+                            // Notify parent of error
+                            if (window.opener && !window.opener.closed) {
+                                try {
+                                    window.opener.postMessage({ 
+                                        type: 'oauth_error', 
+                                        error: 'Token exchange failed',
+                                        message: '${errorDisplay.replace(/'/g, "\\'")}'
+                                    }, window.location.origin);
+                                } catch (e) {
+                                    console.error('Could not notify parent:', e);
+                                }
+                            }
+                        </script>
+                    </body>
+                </html>
+            `);
+        }
         
         if (!tokens.refresh_token) {
             // If no refresh token, check if we have an existing one or need to revoke
@@ -735,12 +989,14 @@ app.get('/oauth_callback', async (req, res) => {
                 errorMessage += 'This usually happens if you\'ve already authorized this app. Please revoke access at https://myaccount.google.com/permissions and try again with prompt=consent.';
             }
             
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.send(`
                 <!DOCTYPE html>
                 <html>
                     <head>
                         <title>OAuth Error - No Refresh Token</title>
                         <meta charset="UTF-8">
+                        <meta http-equiv="X-UA-Compatible" content="IE=edge">
                         <style>
                             body {
                                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -836,9 +1092,14 @@ app.get('/oauth_callback', async (req, res) => {
                 .set({ driveRefreshToken: tokens.refresh_token })
                 .where(eq(settings.id, cfg.id));
             
+            // #region agent log
+            fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:1068',message:'Refresh token saved to database',data:{refreshTokenLength:tokens.refresh_token?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+            // #endregion
+            
             console.log('Refresh token saved successfully');
         } catch (dbError: any) {
             console.error('Failed to save refresh token:', dbError);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(500).send(`
                 <!DOCTYPE html>
                 <html>
@@ -853,12 +1114,23 @@ app.get('/oauth_callback', async (req, res) => {
             `);
         }
 
+        // Set content type explicitly to prevent React app from loading
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
+        // #region agent log
+        fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:1091',message:'Sending success response',data:{headersSent:res.headersSent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
+        
         res.send(`
             <!DOCTYPE html>
             <html>
                 <head>
                     <title>OAuth Success</title>
                     <meta charset="UTF-8">
+                    <meta http-equiv="X-UA-Compatible" content="IE=edge">
                     <style>
                         body {
                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -915,61 +1187,205 @@ app.get('/oauth_callback', async (req, res) => {
                         </p>
                     </div>
                     <script>
-                        // Try to close the window immediately
-                        if (window.opener) {
-                            // Notify parent window that auth was successful
+                        console.log('OAuth callback success page loaded');
+                        console.log('Window opener exists:', !!window.opener);
+                        console.log('Window location origin:', window.location.origin);
+                        
+                        // Notify parent window that auth was successful
+                        function notifyParent() {
                             try {
-                                window.opener.postMessage({ type: 'oauth_success', refreshToken: '${tokens.refresh_token}' }, '*');
-                            } catch (e) {
-                                console.log('Could not notify parent window');
-                            }
-                        }
-                        
-                        // Close the window
-                        function closeWindow() {
-                            if (window.opener) {
-                                window.close();
-                            } else {
-                                // If window.close() doesn't work, try to redirect parent
-                                try {
-                                    window.location.href = window.location.origin + '/#/settings';
-                                } catch (e) {
-                                    document.body.innerHTML = '<div class="container"><h1>✅ Success!</h1><p>Please close this window and refresh the settings page.</p></div>';
+                                if (window.opener) {
+                                    // Don't check window.opener.closed due to COOP restrictions
+                                    // Just try to send the message
+                                    window.opener.postMessage({ 
+                                        type: 'oauth_success', 
+                                        refreshToken: '${tokens.refresh_token}',
+                                        timestamp: Date.now()
+                                    }, window.location.origin);
+                                    console.log('Success message sent to parent window');
+                                    return true;
+                                } else {
+                                    console.log('No opener window found - parent may have navigated away');
+                                    return false;
                                 }
+                            } catch (e) {
+                                console.error('Could not notify parent window:', e);
+                                return false;
                             }
                         }
                         
-                        // Try to close immediately
-                        setTimeout(closeWindow, 500);
+                        // Close the popup window (may be blocked by COOP)
+                        function closeWindow() {
+                            try {
+                                window.close();
+                                console.log('Attempted to close window');
+                            } catch (e) {
+                                console.log('Could not close window (may be blocked by browser/COOP):', e.message);
+                            }
+                        }
                         
-                        // Fallback: try again after 2 seconds
-                        setTimeout(closeWindow, 2000);
+                        // Notify parent immediately when page loads
+                        const notified = notifyParent();
+                        if (!notified) {
+                            console.warn('Could not notify parent immediately - will retry');
+                        }
                         
-                        // Final fallback: show message after 3 seconds
+                        // Retry notification after a short delay
+                        setTimeout(() => {
+                            notifyParent();
+                            closeWindow();
+                        }, 300);
+                        
+                        // Final attempts
+                        setTimeout(() => {
+                            notifyParent();
+                            closeWindow();
+                        }, 1000);
+                        
+                        setTimeout(() => {
+                            closeWindow();
+                        }, 2000);
+                        
+                        // Show manual close message if window is still open after 3 seconds
                         setTimeout(() => {
                             if (!document.hidden) {
-                                document.querySelector('.spinner').style.display = 'none';
-                                document.querySelector('p:last-of-type').innerHTML = 'Please close this window manually and refresh the settings page.';
+                                const spinner = document.querySelector('.spinner');
+                                const lastP = document.querySelector('p:last-of-type');
+                                if (spinner) spinner.style.display = 'none';
+                                if (lastP) {
+                                    lastP.innerHTML = '✅ Token saved! You can close this window now. The settings page will refresh automatically.';
+                                    lastP.style.color = '#4ade80';
+                                }
                             }
                         }, 3000);
+                        
+                        // Prevent accidental navigation away from this page
+                        let notified = false;
+                        const beforeUnloadHandler = (e) => {
+                            // Only prevent if we haven't notified parent yet
+                            if (!notified && window.opener && !window.opener.closed) {
+                                // Allow navigation after a short delay to let postMessage work
+                                setTimeout(() => {
+                                    notified = true;
+                                    window.removeEventListener('beforeunload', beforeUnloadHandler);
+                                }, 1000);
+                            }
+                        };
+                        window.addEventListener('beforeunload', beforeUnloadHandler);
+                        
+                        // Mark as notified after postMessage is sent
+                        setTimeout(() => {
+                            notified = true;
+                        }, 2000);
                     </script>
                 </body>
             </html>
         `);
     } catch (e: any) {
-        console.error('OAuth callback error:', e);
+        // This catch closes the outer try block that starts at line 681
+        // #region agent log
+        fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:1249',message:'Outer catch block - unhandled error',data:{message:e.message,code:e.code,name:e.name,stack:e.stack?.split('\n').slice(0,3).join('\n')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        console.error('=== OAuth callback error ===');
+        console.error('Error details:', {
+            message: e.message,
+            stack: e.stack,
+            name: e.name,
+            code: e.code
+        });
+        
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
         res.status(500).send(`
+            <!DOCTYPE html>
             <html>
-                <head><title>OAuth Error</title></head>
-                <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center;">
-                    <h1 style="color: red;">❌ Authorization Failed</h1>
-                    <p>${e.message}</p>
-                    <p><a href="javascript:window.close()">Close this window</a></p>
+                <head>
+                    <title>OAuth Error</title>
+                    <meta charset="UTF-8">
+                    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                            padding: 40px;
+                            text-align: center;
+                            background: #1a1a1a;
+                            color: #ffffff;
+                            margin: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #2a2a2a;
+                            border-radius: 12px;
+                            padding: 40px;
+                            max-width: 600px;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                        }
+                        h1 {
+                            color: #f87171;
+                            margin-bottom: 20px;
+                            font-size: 24px;
+                        }
+                        p {
+                            color: #d1d5db;
+                            margin: 10px 0;
+                            line-height: 1.6;
+                        }
+                        code {
+                            background: #374151;
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                            font-family: monospace;
+                            font-size: 12px;
+                        }
+                        button {
+                            background: #3b82f6;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            margin-top: 20px;
+                        }
+                        button:hover {
+                            background: #2563eb;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>❌ OAuth Callback Error</h1>
+                        <p><strong>Error:</strong> ${e.message || 'Unknown error'}</p>
+                        <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
+                            Check the server logs for more details. Error code: <code>${e.code || 'N/A'}</code>
+                        </p>
+                        <button onclick="window.close()">Close Window</button>
+                    </div>
+                    <script>
+                        // Notify parent of error
+                        if (window.opener) {
+                            try {
+                                window.opener.postMessage({ 
+                                    type: 'oauth_error', 
+                                    error: 'Callback error',
+                                    message: '${(e.message || 'Unknown error').replace(/'/g, "\\'")}'
+                                }, window.location.origin);
+                            } catch (err) {
+                                console.error('Could not notify parent:', err);
+                            }
+                        }
+                    </script>
                 </body>
             </html>
         `);
-    }
-});
+    } // End of catch block
+}); // End of route handler
 
 // Root path handler - return API info
 app.get('/', (_req, res) => {
@@ -1121,6 +1537,32 @@ app.put('/api/settings', authMiddleware, async (req, res) => {
     }
 });
 
+// Clear/reset Google Drive configuration
+app.delete('/api/drive/reset', authMiddleware, async (_req, res) => {
+    try {
+        const existing = await db.select().from(settings).limit(1);
+        if (existing.length > 0) {
+            await db.update(settings)
+                .set({
+                    driveClientId: null,
+                    driveClientSecret: null,
+                    driveRefreshToken: null,
+                    driveFolderId: null,
+                    driveAutoUpload: false,
+                })
+                .where(eq(settings.id, existing[0].id));
+            
+            console.log('Google Drive configuration cleared successfully');
+            res.json({ success: true, message: 'Google Drive configuration has been cleared' });
+        } else {
+            res.json({ success: true, message: 'No settings found to clear' });
+        }
+    } catch (e: any) {
+        console.error('Failed to clear Drive settings:', e.message);
+        res.status(500).json({ error: 'Failed to clear Drive settings', details: e.message });
+    }
+});
+
 import { GoogleDriveService } from './drive';
 
 // Helper to get Drive service instance
@@ -1131,10 +1573,15 @@ function getDriveService() {
         if (!cfg?.driveClientId || !cfg?.driveClientSecret || !cfg?.driveRefreshToken) {
             throw new Error('Drive not configured');
         }
+        // Trim the refresh token to handle any whitespace issues (same as backup code)
+        const refreshToken = (cfg.driveRefreshToken || '').trim();
+        if (!refreshToken) {
+            throw new Error('Refresh token is empty after trimming');
+        }
         return new GoogleDriveService({
             clientId: cfg.driveClientId,
             clientSecret: cfg.driveClientSecret,
-            refreshToken: cfg.driveRefreshToken,
+            refreshToken: refreshToken,
         });
     };
 }
@@ -1176,7 +1623,9 @@ app.get('/api/drive/oauth-url', authMiddleware, async (req, res) => {
         const authUrl = oauth2Client.generateAuthUrl({
             access_type: 'offline',
             scope: scopes,
-            prompt: 'consent', // Force consent to get refresh token
+            prompt: 'consent', // Force consent screen to get refresh token
+            // Add include_granted_scopes to ensure we get a new token
+            include_granted_scopes: false,
         });
 
         // Return the auth URL and the exact redirect URI being used
@@ -1244,7 +1693,19 @@ app.get('/api/drive/test', authMiddleware, async (_req, res) => {
         }
     } catch (e: any) {
         console.error('Drive test error:', e.message, e.stack);
-        res.status(400).json({ error: e.message || 'Failed to test Drive connection' });
+        
+        // Provide more helpful error messages
+        let errorMessage = e.message || 'Failed to test Drive connection';
+        if (errorMessage.includes('Invalid refresh token') || errorMessage.includes('invalid_grant')) {
+            errorMessage = 'Invalid refresh token. Please regenerate it using the OAuth flow by clicking "Get via OAuth" button in the settings.';
+        }
+        
+        // Use 400 for client errors (invalid config), 500 for server errors
+        const statusCode = errorMessage.includes('Invalid refresh token') || 
+                          errorMessage.includes('not configured') || 
+                          errorMessage.includes('missing') ? 400 : 500;
+        
+        res.status(statusCode).json({ error: errorMessage });
     }
 });
 
@@ -2151,10 +2612,73 @@ app.get('/health', async (_req, res) => {
     }
 });
 
+// Handle favicon requests gracefully (return 204 No Content if not found)
+app.get('/favicon.ico', (_req, res) => {
+    res.status(204).end();
+});
+
 // Serve frontend in production - MUST be after all API routes
+// Note: OAuth callback route is defined earlier (line 675) and will be handled before this catch-all
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client')));
-    app.get('*', (_req, res) => {
+    // Serve static files, but skip if it's the oauth_callback path
+    app.use((req, res, next) => {
+        // #region agent log
+        if (req.path === '/oauth_callback' || req.url?.startsWith('/oauth_callback')) {
+            fetch('http://localhost:7242/ingest/67539d37-ca4b-478e-810f-5a706a03db39',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.ts:2573',message:'Static middleware - oauth_callback detected',data:{path:req.path,url:req.url,originalUrl:req.originalUrl,oauthCallbackFlag:!!res.locals.oauthCallback,headersSent:res.headersSent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+        }
+        // #endregion
+        // CRITICAL: Skip static file serving for oauth_callback - check both path and URL
+        // This must be checked FIRST before any static file serving
+        if (req.path === '/oauth_callback' || req.url?.startsWith('/oauth_callback') || req.originalUrl?.startsWith('/oauth_callback')) {
+            console.log('Static file middleware: Explicitly skipping oauth_callback', {
+                path: req.path,
+                url: req.url,
+                originalUrl: req.originalUrl
+            });
+            return next();
+        }
+        // Also skip if response was already handled (oauth callback)
+        if (res.locals.oauthCallback || res.headersSent) {
+            return next();
+        }
+        express.static(path.join(__dirname, '../client'))(req, res, next);
+    });
+    
+    // Catch-all route for React app - but exclude OAuth callback and API routes
+    // The OAuth callback route is defined earlier, so it will match first
+    app.get('*', (req, res) => {
+        // Double-check: don't serve React app for OAuth callback
+        if (req.path === '/oauth_callback' || req.url?.startsWith('/oauth_callback') || req.originalUrl?.startsWith('/oauth_callback')) {
+            // This should never happen since the route is defined earlier, but just in case
+            console.error('ERROR: OAuth callback caught by catch-all route! This should not happen.');
+            console.error('Request details:', {
+                path: req.path,
+                url: req.url,
+                originalUrl: req.originalUrl,
+                method: req.method,
+                headers: req.headers
+            });
+            // If we get here, the route wasn't matched - send an error page
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.status(500).send(`
+                <!DOCTYPE html>
+                <html>
+                    <head><title>OAuth Route Error</title></head>
+                    <body style="font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #1a1a1a; color: #fff;">
+                        <h1 style="color: red;">❌ Route Configuration Error</h1>
+                        <p>The OAuth callback route was caught by the catch-all route.</p>
+                        <p>This indicates a server configuration issue. Please check server logs.</p>
+                        <p><strong>Path:</strong> ${req.path}</p>
+                        <p><strong>URL:</strong> ${req.url}</p>
+                        <button onclick="window.close()" style="padding: 10px 20px; margin-top: 20px; cursor: pointer;">Close Window</button>
+                    </body>
+                </html>
+            `);
+        }
+        // Don't serve React app for API routes
+        if (req.path.startsWith('/api/') || req.path === '/health') {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
         res.sendFile(path.join(__dirname, '../client/index.html'));
     });
 }
