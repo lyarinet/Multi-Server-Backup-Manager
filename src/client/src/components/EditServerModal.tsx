@@ -13,6 +13,7 @@ interface EditServerModalProps {
 
 export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServerModalProps) {
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [browserOpenIdx, setBrowserOpenIdx] = useState<number | null>(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -34,10 +35,64 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
         backupDb: true,
     });
     const [availableDatabases, setAvailableDatabases] = useState<string[]>([]);
+    const [enableSchedule, setEnableSchedule] = useState(false);
+    const [scheduleType, setScheduleType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
+    const [scheduleTime, setScheduleTime] = useState('02:00');
+    const [scheduleDay, setScheduleDay] = useState<number | undefined>(undefined);
+    const [customCron, setCustomCron] = useState('');
+    const [scheduleName, setScheduleName] = useState('');
+    const [existingScheduleId, setExistingScheduleId] = useState<number | null>(null);
+
+    // Load existing schedule for this server
+    useEffect(() => {
+        const loadExistingSchedule = async () => {
+            if (server && server.id) {
+                try {
+                    const res = await fetch('/api/cron-jobs');
+                    if (res.ok) {
+                        const allJobs = await res.json();
+                        const serverSchedule = allJobs.find((job: any) => job.serverId === server.id);
+                        
+                        if (serverSchedule) {
+                            // Load existing schedule
+                            setExistingScheduleId(serverSchedule.id);
+                            setEnableSchedule(true);
+                            setScheduleName(serverSchedule.name || `${server.name} - Scheduled Backup`);
+                            setScheduleType(serverSchedule.scheduleType || 'daily');
+                            setScheduleTime(serverSchedule.scheduleTime || '02:00');
+                            setScheduleDay(serverSchedule.scheduleDay || undefined);
+                            if (serverSchedule.scheduleType === 'custom') {
+                                setCustomCron(serverSchedule.schedule || '');
+                            } else {
+                                setCustomCron('');
+                            }
+                        } else {
+                            // No existing schedule
+                            setExistingScheduleId(null);
+                            setEnableSchedule(false);
+                            setScheduleType('daily');
+                            setScheduleTime('02:00');
+                            setScheduleDay(undefined);
+                            setCustomCron('');
+                            setScheduleName(`${server.name} - Scheduled Backup`);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading existing schedule:', e);
+                    // Default to no schedule on error
+                    setExistingScheduleId(null);
+                    setEnableSchedule(false);
+                }
+            }
+        };
+        
+        loadExistingSchedule();
+    }, [server]);
 
     // Populate form when server changes
     useEffect(() => {
         if (server) {
+            setError(null);
             setFormData({
                 name: server.name,
                 ip: server.ip,
@@ -65,18 +120,133 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
+        
+        // Validate schedule fields if enabled
+        if (enableSchedule) {
+            if (!scheduleName.trim()) {
+                setError('Schedule name is required when scheduling is enabled');
+                setLoading(false);
+                return;
+            }
+            if (scheduleType === 'custom' && !customCron.trim()) {
+                setError('Custom cron expression is required');
+                setLoading(false);
+                return;
+            }
+        }
+        
         try {
             const res = await fetch(`/api/servers/${server.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-            if (res.ok) {
+            
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: `Failed to update server: ${res.status} ${res.statusText}` }));
+                throw new Error(errorData.error || `Failed to update server: ${res.status}`);
+            }
+            
+            const updatedServer = await res.json();
+            
+            // Handle schedule: update existing or create new, or delete if disabled
+            let scheduleError = null;
+            if (enableSchedule && scheduleName.trim()) {
+                try {
+                    const cronPayload: any = {
+                        name: scheduleName.trim(),
+                        serverId: updatedServer.id,
+                        scheduleType,
+                        enabled: true,
+                    };
+
+                    if (scheduleType === 'custom') {
+                        if (!customCron.trim()) {
+                            scheduleError = 'Custom cron expression is required';
+                        } else {
+                            cronPayload.schedule = customCron.trim();
+                        }
+                    } else {
+                        cronPayload.scheduleTime = scheduleTime;
+                        if (scheduleType === 'weekly' || scheduleType === 'monthly') {
+                            cronPayload.scheduleDay = scheduleDay;
+                        }
+                    }
+
+                    if (!scheduleError) {
+                        if (existingScheduleId) {
+                            // Update existing schedule
+                            console.log('Updating cron job', existingScheduleId, 'with payload:', cronPayload);
+                            const cronRes = await fetch(`/api/cron-jobs/${existingScheduleId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(cronPayload),
+                            });
+
+                            const cronResponseData = await cronRes.json().catch(() => ({}));
+                            console.log('Cron job update response:', cronRes.status, cronResponseData);
+
+                            if (!cronRes.ok) {
+                                scheduleError = `Server updated successfully, but schedule update failed: ${cronResponseData.error || cronResponseData.details || 'Unknown error'}`;
+                            } else {
+                                console.log('Schedule updated successfully:', cronResponseData);
+                            }
+                        } else {
+                            // Create new schedule
+                            console.log('Creating cron job with payload:', cronPayload);
+                            const cronRes = await fetch('/api/cron-jobs', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(cronPayload),
+                            });
+
+                            const cronResponseData = await cronRes.json().catch(() => ({}));
+                            console.log('Cron job creation response:', cronRes.status, cronResponseData);
+
+                            if (!cronRes.ok) {
+                                scheduleError = `Server updated successfully, but schedule creation failed: ${cronResponseData.error || cronResponseData.details || 'Unknown error'}`;
+                            } else {
+                                console.log('Schedule created successfully:', cronResponseData);
+                                if (cronResponseData.id) {
+                                    setExistingScheduleId(cronResponseData.id);
+                                }
+                            }
+                        }
+                    }
+                } catch (scheduleErr: any) {
+                    console.error('Error handling schedule:', scheduleErr);
+                    scheduleError = `Server updated successfully, but schedule operation failed: ${scheduleErr.message || 'Unknown error'}`;
+                }
+            } else if (existingScheduleId) {
+                // Schedule is disabled but exists - delete it
+                try {
+                    console.log('Deleting existing schedule', existingScheduleId);
+                    const deleteRes = await fetch(`/api/cron-jobs/${existingScheduleId}`, {
+                        method: 'DELETE',
+                    });
+                    if (deleteRes.ok) {
+                        console.log('Schedule deleted successfully');
+                        setExistingScheduleId(null);
+                    } else {
+                        const deleteError = await deleteRes.json().catch(() => ({ error: 'Failed to delete schedule' }));
+                        scheduleError = `Server updated successfully, but schedule deletion failed: ${deleteError.error || deleteError.details || 'Unknown error'}`;
+                    }
+                } catch (deleteErr: any) {
+                    console.error('Error deleting schedule:', deleteErr);
+                    scheduleError = `Server updated successfully, but schedule deletion failed: ${deleteErr.message || 'Unknown error'}`;
+                }
+            }
+            
+            if (scheduleError) {
+                setError(scheduleError);
+            } else {
                 onSuccess();
                 onClose();
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error('Error updating server:', error);
+            setError(error.message || 'Failed to update server. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -91,6 +261,12 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
                         <X className="w-5 h-5" />
                     </button>
                 </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Basic Information */}
@@ -273,6 +449,7 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
                         <div className="flex gap-2">
                             <Button type="button" variant="outline" onClick={async () => {
                                 try {
+                                    setError(null);
                                     const res = await fetch(`/api/servers/${server!.id}/dbs`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
@@ -285,15 +462,18 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
                                     });
                                     const data = await res.json();
                                     if (!res.ok) {
-                                        alert(`Detect failed: ${data?.error || 'Unknown error'}`);
+                                        setError(`Database detection failed: ${data?.error || 'Unknown error'}`);
                                         return;
                                     }
                                     if (Array.isArray(data.databases)) {
                                         setAvailableDatabases(data.databases);
                                         setFormData({ ...formData, dbSelected: data.databases });
+                                        if (data.databases.length === 0) {
+                                            setError('No databases found. Please check your database credentials.');
+                                        }
                                     }
-                                } catch (e) {
-                                    alert('Detect failed');
+                                } catch (e: any) {
+                                    setError(`Database detection failed: ${e.message || 'Unknown error'}`);
                                 }
                             }}>Detect</Button>
                         </div>
@@ -320,6 +500,119 @@ export function EditServerModal({ isOpen, onClose, onSuccess, server }: EditServ
                                 <div className="text-sm text-muted-foreground italic">No databases detected or selected</div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Schedule Backup */}
+                    <div className="space-y-4 border border-border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="font-semibold text-lg">Schedule Backup</h3>
+                                <p className="text-sm text-muted-foreground -mt-1">Optionally create an automated backup schedule for this server</p>
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={enableSchedule}
+                                    onChange={(e) => setEnableSchedule(e.target.checked)}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm font-medium">Enable Schedule</span>
+                            </label>
+                        </div>
+
+                        {enableSchedule && (
+                            <div className="space-y-4 pt-2">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Schedule Name</label>
+                                    <input
+                                        type="text"
+                                        required={enableSchedule}
+                                        value={scheduleName}
+                                        onChange={(e) => setScheduleName(e.target.value)}
+                                        className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                        placeholder="e.g., Daily Backup at 2 AM"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Schedule Type</label>
+                                    <select
+                                        value={scheduleType}
+                                        onChange={(e) => setScheduleType(e.target.value as any)}
+                                        className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="custom">Custom Cron Expression</option>
+                                    </select>
+                                </div>
+
+                                {scheduleType === 'custom' ? (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Cron Expression</label>
+                                        <input
+                                            type="text"
+                                            required={enableSchedule && scheduleType === 'custom'}
+                                            value={customCron}
+                                            onChange={(e) => setCustomCron(e.target.value)}
+                                            className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                                            placeholder="0 2 * * * (minute hour day month dayOfWeek)"
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Format: minute hour day month dayOfWeek (e.g., "0 2 * * *" for daily at 2 AM)
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Time</label>
+                                            <input
+                                                type="time"
+                                                required={enableSchedule}
+                                                value={scheduleTime}
+                                                onChange={(e) => setScheduleTime(e.target.value)}
+                                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                            />
+                                        </div>
+
+                                        {scheduleType === 'weekly' && (
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Day of Week</label>
+                                                <select
+                                                    value={scheduleDay || 0}
+                                                    onChange={(e) => setScheduleDay(parseInt(e.target.value))}
+                                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                                >
+                                                    <option value={0}>Sunday</option>
+                                                    <option value={1}>Monday</option>
+                                                    <option value={2}>Tuesday</option>
+                                                    <option value={3}>Wednesday</option>
+                                                    <option value={4}>Thursday</option>
+                                                    <option value={5}>Friday</option>
+                                                    <option value={6}>Saturday</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {scheduleType === 'monthly' && (
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Day of Month</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="31"
+                                                    required={enableSchedule && scheduleType === 'monthly'}
+                                                    value={scheduleDay || 1}
+                                                    onChange={(e) => setScheduleDay(parseInt(e.target.value))}
+                                                    className="w-full h-10 px-3 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">

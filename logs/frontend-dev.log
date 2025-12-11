@@ -3,26 +3,98 @@
 > BACKEND_PORT=${PORT:-3010} vite
 
 
-  VITE v5.4.21  ready in 330 ms
+  VITE v5.4.21  ready in 308 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://10.240.150.158:5173/
   ➜  Network: http://192.168.2.118:5173/
 Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
 Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
-Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
-Proxying GET /api/autostart/status to /api/autostart/status
 Proxying GET /api/servers to /api/servers
-Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
-Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
 Proxying GET /api/servers to /api/servers
-Proxying GET /api/settings to /api/settings
-Proxying GET /api/autostart/status to /api/autostart/status
-Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
-Proxying GET /api/settings to /api/settings
-Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
 Proxying GET /api/cron-jobs to /api/cron-jobs
-Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
 Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/3 to /api/servers/3
+Proxying DELETE /api/cron-jobs/6 to /api/cron-jobs/6
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/3 to /api/servers/3
+Proxying DELETE /api/cron-jobs/7 to /api/cron-jobs/7
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/3 to /api/servers/3
 Proxying POST /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/2 to /api/servers/2
+Proxying POST /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/2 to /api/servers/2
+Proxying DELETE /api/cron-jobs/9 to /api/cron-jobs/9
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying PUT /api/servers/3 to /api/servers/3
+Proxying PUT /api/cron-jobs/8 to /api/cron-jobs/8
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/cron-jobs to /api/cron-jobs
+12:47:41 PM [vite] hmr update /src/components/EditServerModal.tsx, /src/index.css
+Proxying GET /api/ip-whitelist/status to /api/ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
+Proxying GET /api/autostart/status to /api/autostart/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/settings to /api/settings
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
+Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
+Proxying GET /api/autostart/status to /api/autostart/status
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/settings to /api/settings
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/login-ip-whitelist/status to /api/login-ip-whitelist/status
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
+Proxying GET /api/settings to /api/settings
+Proxying GET /api/autostart/status to /api/autostart/status
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
+Proxying GET /api/settings to /api/settings
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/login-ip-whitelist/current-ip to /api/login-ip-whitelist/current-ip
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying GET /api/autostart/status to /api/autostart/status
+Proxying GET /api/cron-jobs to /api/cron-jobs
+Proxying GET /api/login-ip-whitelist to /api/login-ip-whitelist
+Proxying PUT /api/settings to /api/settings
+Proxying GET /api/servers to /api/servers
+Proxying GET /api/settings to /api/settings
 Proxying GET /api/cron-jobs to /api/cron-jobs
